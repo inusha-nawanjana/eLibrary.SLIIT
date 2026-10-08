@@ -46,7 +46,7 @@ Demo data is stored locally. Book and room requests appear as pending in **Activ
 
 ## Supabase connection and CRUD
 
-The Supabase project has not been created yet, so the app still runs in demo mode. Follow [the Supabase setup guide](docs/SUPABASE_SETUP.md) to apply `supabase/setup.sql`, create student/admin profiles, and provide the public project URL and key in `config.local.json`.
+The project is now configured for Supabase in the local ignored `config.local.json`. Follow [the Supabase setup guide](docs/SUPABASE_SETUP.md) to create Auth users and matching student/admin profiles. Demo mode remains available when the file is absent.
 
 Administrator CRUD is available under **Profile > Admin Dashboard > Books / Rooms** when connected to Supabase. It supports adding, listing, editing, and deleting catalogue records, cover/PDF replacement, and room enabling/disabling. Database policies restrict changes to administrators. Items with reservation history cannot be deleted; active loans protect the copy count.
 

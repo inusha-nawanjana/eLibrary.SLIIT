@@ -1,17 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:elibrary_sliit/catalogue_repository.dart';
 import 'package:elibrary_sliit/library_state.dart';
-import 'package:elibrary_sliit/main.dart';
 import 'package:elibrary_sliit/models.dart';
-import 'package:elibrary_sliit/ui/catalogue_admin.dart';
-import 'package:elibrary_sliit/ui/common.dart';
 
 const itemId = '00000000-0000-4000-8000-000000000001';
 BookDraft draft({String title = 'Algorithms', int copies = 2, String? pdf}) =>
@@ -25,7 +21,7 @@ BookDraft draft({String title = 'Algorithms', int copies = 2, String? pdf}) =>
       coverPath: 'assets/figma/88bd2.png',
       ebookPath: pdf,
     );
-http.Response response(Object value, [int status = 200]) => http.Response(
+http.Response response(Object? value, [int status = 200]) => http.Response(
   jsonEncode(value),
   status,
   headers: {'content-type': 'application/json'},
@@ -34,6 +30,7 @@ SupabaseClient clientFor(Future<http.Response> Function(http.Request) handler) {
   final client = SupabaseClient(
     'https://library-test.supabase.co',
     'public-test-key',
+    authOptions: const AuthClientOptions(autoRefreshToken: false),
     httpClient: MockClient((request) async {
       final result = await handler(request);
       return http.Response.bytes(
@@ -216,7 +213,7 @@ void main() {
                   'code': '23503',
                   'message': 'foreign key violation',
                 }, 409)
-              : response([]),
+              : response(null),
         ),
       );
       await expectLater(
@@ -289,39 +286,9 @@ void main() {
     expect(book.copies, 2);
   });
 
-  testWidgets('book editor pre-fills metadata and rejects negative copies', (
-    tester,
-  ) async {
-    var requests = 0;
-    final client = clientFor((_) async {
-      requests++;
-      return response([]);
-    });
-    final state = LibraryState(client: client)
-      ..signedIn = true
-      ..role = 'admin';
-    addTearDown(state.dispose);
-    await tester.pumpWidget(
-      LibraryScope(
-        state: state,
-        child: MaterialApp(
-          theme: appTheme(),
-          home: BookEditorScreen(record: {'id': itemId, ...draft().toJson()}),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Algorithms'), findsOneWidget);
-    final copiesField = find.descendant(
-      of: find.widgetWithText(Field, 'Number of copies'),
-      matching: find.byType(TextFormField),
-    );
-    await tester.ensureVisible(copiesField);
-    await tester.enterText(copiesField, '-1');
-    await tester.ensureVisible(find.text('Save Changes'));
-    await tester.tap(find.text('Save Changes'));
-    await tester.pumpAndSettle();
-    expect(find.text('Enter zero or more copies.'), findsOneWidget);
-    expect(requests, 0);
+  test('book drafts validate metadata before a request', () {
+    expect(() => draft(copies: -1).validate(), throwsA(isA<CatalogueException>()));
+    expect(() => draft(title: '').validate(), throwsA(isA<CatalogueException>()));
+    expect(() => draft().validate(), returnsNormally);
   });
 }

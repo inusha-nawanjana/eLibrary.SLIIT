@@ -1,12 +1,12 @@
 # Connect the app to Supabase
 
-The project is currently unconnected: a Supabase project has not been created yet. Demo mode remains available. The CRUD client and database setup files are ready for a real project; they are not evidence of a live database deployment.
+The project is configured locally for the Supabase project supplied for this checkout. The public API connection has been verified for catalogue books, rooms, and book availability. The publishable key is kept in ignored `config.local.json`; it is not committed. Demo mode remains available when that file is absent.
 
 ## 1. Create the project and tables
 
-Create a project at https://supabase.com/dashboard. Open its SQL Editor and run **supabase/setup.sql** once in a fresh project. It creates the tables, row-level security policies, reservation functions, storage buckets, fourteen rooms, and five sample catalogue books.
+The supplied project already has the tables, row-level security policies, reservation functions, storage buckets, fourteen rooms, and five sample catalogue books. Do not rerun `supabase/setup.sql` or the migrations in this project.
 
-Do not run both the setup bundle and its individual migrations. For an existing database with migrations 001 and 002 already applied, run only `supabase/migrations/202610080003_catalogue_crud.sql`.
+For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor. Do not run both the setup bundle and its individual migrations. For an existing database with migrations 001 and 002 already applied, run only `supabase/migrations/202610080003_catalogue_crud.sql`.
 
 ## 2. Create a student and administrator
 

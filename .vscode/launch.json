@@ -2,10 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "eLibrary Demo",
+      "name": "eLibrary Supabase",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define-from-file=config.local.json"
+      ],
       "env": {
         "GRADLE_USER_HOME": "${workspaceFolder}/.tools/gradle",
         "PUB_CACHE": "${workspaceFolder}/.tools/pub-cache",
@@ -14,13 +17,10 @@
       }
     },
     {
-      "name": "eLibrary Supabase",
+      "name": "eLibrary Demo",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
-      "toolArgs": [
-        "--dart-define-from-file=config.local.json"
-      ],
       "env": {
         "GRADLE_USER_HOME": "${workspaceFolder}/.tools/gradle",
         "PUB_CACHE": "${workspaceFolder}/.tools/pub-cache",
