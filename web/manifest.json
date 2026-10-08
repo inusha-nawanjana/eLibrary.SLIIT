@@ -1,0 +1,18 @@
+{
+  "name": "eLibrary.SLIIT",
+  "short_name": "eLibrary",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#112850",
+  "description": "SLIIT library catalogue, eBooks, and study-space reservations.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icons/sliit.png",
+      "sizes": "320x320",
+      "type": "image/png"
+    }
+  ]
+}

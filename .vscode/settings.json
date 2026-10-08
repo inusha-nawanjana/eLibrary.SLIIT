@@ -1,0 +1,6 @@
+{
+  "dart.flutterSdkPath": ".tools/flutter",
+  "editor.formatOnSave": true,
+  "files.exclude": {".tools": true, ".design": true},
+  "search.exclude": {".tools/**": true, ".design/**": true, "build/**": true}
+}
