@@ -1,4 +1,3 @@
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +30,10 @@ class _EbookState extends State<EbookScreen> {
       );
       if (path == null && !kIsWeb) return;
       await state.downloaded(widget.book);
-      if (mounted) await approval(context, download: true);
+      if (mounted) {
+        setState(() => downloading = false);
+        await approval(context, download: true);
+      }
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {

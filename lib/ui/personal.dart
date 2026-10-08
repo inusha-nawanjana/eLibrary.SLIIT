@@ -35,7 +35,19 @@ class _ActivityState extends State<ActivityScreen> {
       (b) => b.kind == kind && (filter == 'All' || b.status == filter),
     );
     return Screen(
-      title: 'Your Activity',
+      header: Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: SizedBox(
+          height: 54,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Your Activity', style: txt(18, weight: heavy)),
+            ),
+          ),
+        ),
+      ),
       tab: 3,
       padding: EdgeInsets.zero,
       child: Column(
@@ -48,6 +60,7 @@ class _ActivityState extends State<ActivityScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
+                spacing: 8,
                 children: [
                   for (var i = 0; i < 3; i++)
                     Expanded(
@@ -57,7 +70,8 @@ class _ActivityState extends State<ActivityScreen> {
                           filter = 'All';
                         }),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          height: 40,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
@@ -72,7 +86,7 @@ class _ActivityState extends State<ActivityScreen> {
                             ['Books', 'Learning Space', 'Discussion Space'][i],
                             textAlign: TextAlign.center,
                             style: txt(
-                              12,
+                              13,
                               weight: section == i ? bold : FontWeight.w500,
                               color: section == i ? orange : muted,
                             ),
@@ -85,8 +99,9 @@ class _ActivityState extends State<ActivityScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Filters(
                   values: const ['All', 'Pending', 'Active', 'Completed'],
@@ -134,37 +149,42 @@ class BookingCard extends StatelessWidget {
     return Panel(
       shadow: true,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            b.title,
-            style: txt(14, weight: bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Row(
+          Stack(
             children: [
-              Expanded(
-                child: Text(
-                  b.subtitle,
-                  style: txt(12, color: muted),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    b.title,
+                    style: txt(14, weight: bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 80),
+                    child: Text(
+                      b.subtitle,
+                      style: txt(12, color: muted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${b.status == 'Active' && !room
+                        ? 'Return Due'
+                        : b.status == 'Completed'
+                        ? 'Completed'
+                        : 'Reservation'}: $stamp',
+                    style: txt(11, color: muted),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              StatusBadge(b.status),
+              Positioned(right: 0, top: 16, child: StatusBadge(b.status)),
             ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${b.status == 'Active' && !room
-                ? 'Return Due'
-                : b.status == 'Completed'
-                ? 'Completed'
-                : 'Reservation'}: $stamp',
-            style: txt(11, color: muted),
           ),
           if (b.note.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -244,6 +264,7 @@ class _ExtensionState extends State<ExtensionScreen> {
         note.text,
       );
       if (!mounted) return;
+      setState(() => busy = false);
       await approval(context, extension: true);
       if (mounted) Navigator.pop(context);
     } catch (e) {

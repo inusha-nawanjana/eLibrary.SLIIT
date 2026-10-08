@@ -38,12 +38,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Screen(
       tab: digital ? 1 : 0,
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      header: Padding(
+      header: Container(
+        height: 76,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Brand(),
+            const Expanded(child: Brand()),
             digital
                 ? IconButton(
                     tooltip: 'Downloads',

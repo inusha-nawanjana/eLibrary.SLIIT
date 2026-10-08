@@ -401,7 +401,9 @@ class LibraryState extends ChangeNotifier {
       );
     }
     final start = campusUtc(day, hour);
-    if (start.isBefore(DateTime.now().toUtc().add(const Duration(minutes: 15)))) {
+    if (start.isBefore(
+      DateTime.now().toUtc().add(const Duration(minutes: 15)),
+    )) {
       throw const LibraryException(
         'Choose a slot at least 15 minutes in the future.',
       );

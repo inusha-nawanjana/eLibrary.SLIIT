@@ -81,6 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 32),
             const Brand(
               center: true,
+              subtitleSize: 13,
               subtitle: 'Use your student portal credentials',
             ),
             const SizedBox(height: 36),
@@ -127,6 +128,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(0, 38),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: busy ? null : reset,
                   child: Text(
                     'Forgot Password?',

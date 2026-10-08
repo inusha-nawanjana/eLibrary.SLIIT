@@ -8,6 +8,11 @@ android {
     namespace = "lk.sliit.elibrary_sliit"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    // Optional machine-local NDK location (keeps large SDK files off a full system drive).
+    val localNdk = rootProject.file("ndk.local.properties")
+    if (localNdk.exists()) {
+        ndkPath = localNdk.readText().trim()
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

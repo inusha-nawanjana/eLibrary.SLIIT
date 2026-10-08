@@ -21,9 +21,10 @@ TextStyle txt(
   double size, {
   FontWeight weight = FontWeight.w400,
   Color color = navy,
-  double? height,
+  double? height = 1.2,
 }) => TextStyle(
   fontFamily: 'Inter',
+  letterSpacing: 0,
   fontSize: size,
   fontWeight: weight,
   color: color,
@@ -128,8 +129,10 @@ class Brand extends StatelessWidget {
     this.size = 22,
     this.subtitle = 'The Knowledge University',
     this.center = false,
+    this.subtitleSize = 12,
   });
   final double size;
+  final double subtitleSize;
   final String subtitle;
   final bool center;
   @override
@@ -151,7 +154,7 @@ class Brand extends StatelessWidget {
         style: txt(size, weight: heavy),
       ),
       const SizedBox(height: 2),
-      Text(subtitle, style: txt(size > 25 ? 16 : 12, color: muted)),
+      Text(subtitle, style: txt(size > 25 ? 16 : subtitleSize, color: muted)),
     ],
   );
 }
@@ -422,7 +425,11 @@ class PrimaryButton extends StatelessWidget {
                       child: Text(
                         label,
                         style: txt(
-                          height < 48 ? 14 : 16,
+                          height < 40
+                              ? 12
+                              : height < 48
+                              ? 14
+                              : 16,
                           weight: bold,
                           color: outline ? color : foreground,
                         ),
@@ -450,13 +457,14 @@ class Field extends StatelessWidget {
     this.keyboard,
     this.lines = 1,
     this.readOnly = false,
+    this.compact = false,
     this.onTap,
     this.onChanged,
   });
   final String label, hint;
   final TextEditingController controller;
   final String? Function(String?)? validator;
-  final bool obscure, readOnly;
+  final bool obscure, readOnly, compact;
   final Widget? suffix;
   final TextInputType? keyboard;
   final int lines;
@@ -487,9 +495,9 @@ class Field extends StatelessWidget {
           filled: true,
           fillColor: surface,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(
+          contentPadding: EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 15,
+            vertical: compact ? 13 : 15,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -535,10 +543,13 @@ class Panel extends StatelessWidget {
   final bool shadow;
   @override
   Widget build(BuildContext c) => Container(
+    foregroundDecoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: line),
+    ),
     decoration: BoxDecoration(
       color: color,
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: line),
       boxShadow: shadow
           ? [
               BoxShadow(
@@ -614,7 +625,7 @@ class Filters extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 8,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
                   color: value == selected ? orange : surface,
@@ -693,14 +704,18 @@ Future<void> approval(
           ),
           const SizedBox(height: 24),
           Text(
-            download ? (kIsWeb ? 'Download Started' : 'Download Complete') : 'Waiting for Approval',
+            download
+                ? (kIsWeb ? 'Download Started' : 'Download Complete')
+                : 'Waiting for Approval',
             style: txt(20, weight: heavy),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             download
-                ? (kIsWeb ? 'Your PDF download has started. Check your browser downloads to open it.' : 'The eBook has been successfully saved to your device and is ready to read.')
+                ? (kIsWeb
+                      ? 'Your PDF download has started. Check your browser downloads to open it.'
+                      : 'The eBook has been successfully saved to your device and is ready to read.')
                 : extension
                 ? 'Your extension request is being reviewed by the admin.'
                 : room

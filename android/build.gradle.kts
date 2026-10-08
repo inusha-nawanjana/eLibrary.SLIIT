@@ -17,6 +17,15 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    // Native dependencies must use the same optional NDK location as the app.
+    val localNdk = rootProject.file("ndk.local.properties")
+    if (localNdk.exists()) {
+        plugins.withId("com.android.library") {
+            extensions.configure<com.android.build.gradle.LibraryExtension> {
+                ndkPath = localNdk.readText().trim()
+            }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

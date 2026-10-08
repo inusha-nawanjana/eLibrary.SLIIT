@@ -88,6 +88,7 @@ class StudyScreen extends StatelessWidget {
                                 ),
                                 width: constraints.maxWidth,
                                 height: kind == 'learning' ? 225.23 : 278.78,
+                                fit: BoxFit.fill,
                               ),
                             ),
                           ),
@@ -233,6 +234,7 @@ class _BookReservationState extends State<BookReservationScreen> {
       final reservation = await LibraryScope.of(context)
           .reserveBook(widget.book, name.text, phone.text);
       if (!mounted) return;
+      setState(() => busy = false);
       await approval(context, id: reservation);
       if (mounted) {
         LibraryScope.of(context).selectTab(3);
@@ -475,6 +477,7 @@ class _RoomReservationState extends State<RoomReservationScreen> {
         selected!,
       );
       if (!mounted) return;
+      setState(() => busy = false);
       await approval(context, id: reservation, room: true);
       if (mounted) {
         LibraryScope.of(context).selectTab(3);
@@ -506,12 +509,14 @@ class _RoomReservationState extends State<RoomReservationScreen> {
             Field(
               learning ? 'Student ID' : 'Student / Lecturer ID',
               controller: id,
+              compact: true,
               readOnly: true,
             ),
             const SizedBox(height: 20),
             Field(
               learning ? 'Student Name' : 'Full Name',
               controller: name,
+              compact: true,
               hint: learning ? 'e.g. A. K. Perera' : 'e.g. Prof. Anderson',
               validator: requiredValue,
             ),
@@ -519,6 +524,7 @@ class _RoomReservationState extends State<RoomReservationScreen> {
             Field(
               'Phone Number',
               controller: phone,
+              compact: true,
               hint: 'e.g. +94 77 123 4567',
               keyboard: TextInputType.phone,
               validator: validPhone,
@@ -533,6 +539,7 @@ class _RoomReservationState extends State<RoomReservationScreen> {
               Field(
                 'Group Member ${i + 1} ID',
                 controller: members[i],
+                compact: true,
                 hint: i < min ? 'ITXXXXXXX' : 'ITXXXXXXX (Optional)',
                 validator: i < min ? requiredValue : null,
               ),

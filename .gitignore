@@ -8,7 +8,9 @@ coverage/
 *.iml
 .idea/
 android/local.properties
+android/ndk.local.properties
 android/.gradle/
+android/.kotlin/
 android/key.properties
 *.jks
 *.keystore

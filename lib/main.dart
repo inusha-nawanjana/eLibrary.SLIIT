@@ -214,28 +214,38 @@ class SplashScreen extends StatelessWidget {
     body: SafeArea(
       top: !previewChrome,
       bottom: false,
-      child: Column(
-        children: [
-          if (previewChrome) const DeviceStatus(),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (c, s) => Stack(
-                children: [
-                  Positioned.fill(
-                    child: Art(asset('splash.png'), fit: BoxFit.fill),
-                  ),
-                  Positioned(
-                    left: 32,
-                    right: 32,
-                    top: s.maxHeight * .63,
-                    child: const Brand(size: 36, center: true),
-                  ),
-                ],
-              ),
+      child: LayoutBuilder(
+        builder: (c, s) => Stack(
+          children: [
+            Positioned(
+              top: s.maxHeight * 22.7915 / 844,
+              height: s.maxHeight * 798.4165 / 844,
+              left: 0,
+              right: 0,
+              child: Art(asset('splash.png'), fit: BoxFit.fill),
             ),
-          ),
-          if (previewChrome) const HomeIndicator(),
-        ],
+            Positioned(
+              left: 32,
+              right: 32,
+              top: s.maxHeight * 545 / 844,
+              child: const Brand(size: 36, center: true),
+            ),
+            if (previewChrome)
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: DeviceStatus(),
+              ),
+            if (previewChrome)
+              const Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: HomeIndicator(),
+              ),
+          ],
+        ),
       ),
     ),
   );
