@@ -35,6 +35,7 @@ class Bootstrap extends StatefulWidget {
 class _BootstrapState extends State<Bootstrap> {
   LibraryState? state;
   Object? error;
+  SupabaseClient? connectedClient;
   @override
   void initState() {
     super.initState();
@@ -45,16 +46,22 @@ class _BootstrapState extends State<Bootstrap> {
     setState(() => error = null);
     try {
       const url = String.fromEnvironment('SUPABASE_URL'),
-          key = String.fromEnvironment('SUPABASE_ANON_KEY');
+          key = String.fromEnvironment(
+            'SUPABASE_PUBLISHABLE_KEY',
+            defaultValue: String.fromEnvironment('SUPABASE_ANON_KEY'),
+          );
       if (url.isEmpty != key.isEmpty) {
         throw const LibraryException(
-          'Set both SUPABASE_URL and SUPABASE_ANON_KEY, or leave both empty for demo mode.',
+          'Set both SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY, or leave both empty for demo mode.',
         );
       }
       SupabaseClient? client;
       if (url.isNotEmpty) {
-        await Supabase.initialize(url: url, publishableKey: key);
-        client = Supabase.instance.client;
+        if (connectedClient == null) {
+          await Supabase.initialize(url: url, publishableKey: key);
+          connectedClient = Supabase.instance.client;
+        }
+        client = connectedClient;
       }
       final loaded = LibraryState(client: client);
       await loaded.initialize();

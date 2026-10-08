@@ -22,3 +22,7 @@ ios/Flutter/flutter_export_environment.sh
 .env.*
 !.env.example
 config.local.json
+
+# JVM crash reports from local Android tooling
+hs_err_pid*.log
+replay_pid*.log

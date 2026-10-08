@@ -7,7 +7,10 @@
       "type": "dart",
       "program": "lib/main.dart",
       "env": {
-        "GRADLE_USER_HOME": "D:\\eLibraryBuildTools\\gradle"
+        "GRADLE_USER_HOME": "${workspaceFolder}/.tools/gradle",
+        "PUB_CACHE": "${workspaceFolder}/.tools/pub-cache",
+        "TEMP": "${workspaceFolder}/.tools/temp",
+        "TMP": "${workspaceFolder}/.tools/temp"
       }
     },
     {
@@ -19,8 +22,46 @@
         "--dart-define-from-file=config.local.json"
       ],
       "env": {
-        "GRADLE_USER_HOME": "D:\\eLibraryBuildTools\\gradle"
+        "GRADLE_USER_HOME": "${workspaceFolder}/.tools/gradle",
+        "PUB_CACHE": "${workspaceFolder}/.tools/pub-cache",
+        "TEMP": "${workspaceFolder}/.tools/temp",
+        "TMP": "${workspaceFolder}/.tools/temp"
       }
+    },
+    {
+      "name": "eLibrary Demo (Chrome)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "env": {
+        "GRADLE_USER_HOME": "${workspaceFolder}/.tools/gradle",
+        "PUB_CACHE": "${workspaceFolder}/.tools/pub-cache",
+        "TEMP": "${workspaceFolder}/.tools/temp",
+        "TMP": "${workspaceFolder}/.tools/temp"
+      },
+      "toolArgs": [
+        "--web-port=5188",
+        "--no-web-resources-cdn"
+      ]
+    },
+    {
+      "name": "eLibrary Supabase (Chrome)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define-from-file=config.local.json",
+        "--web-port=5188",
+        "--no-web-resources-cdn"
+      ],
+      "env": {
+        "GRADLE_USER_HOME": "${workspaceFolder}/.tools/gradle",
+        "PUB_CACHE": "${workspaceFolder}/.tools/pub-cache",
+        "TEMP": "${workspaceFolder}/.tools/temp",
+        "TMP": "${workspaceFolder}/.tools/temp"
+      },
+      "deviceId": "chrome"
     }
   ]
 }

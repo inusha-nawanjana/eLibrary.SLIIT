@@ -18,6 +18,8 @@ class Book {
     this.ebook = false,
     this.course = '',
     this.ebookPath,
+    this.coverPath,
+    this.copies = 1,
   });
   final String id,
       title,
@@ -29,8 +31,8 @@ class Book {
       shelf,
       synopsis,
       course;
-  final String? detailCover, ebookPath;
-  final int year;
+  final String? detailCover, ebookPath, coverPath;
+  final int year, copies;
   final bool ebook;
   static const defaultSynopsis =
       'A comprehensive guide to the modern study of computer algorithms, presenting many algorithms in detail with mathematical rigor yet remaining widely accessible to all levels of readers.';
@@ -39,7 +41,9 @@ class Book {
     title: j['title'],
     author: j['author'],
     category: j['category'],
-    cover: j['cover_path'] ?? '',
+    cover: j['cover_display'] ?? j['cover_path'] ?? '',
+    coverPath: j['cover_path'],
+    copies: j['copies'] ?? 1,
     year: j['published_year'] ?? 2021,
     edition: j['edition'] ?? '',
     shelf: j['shelf'] ?? '',

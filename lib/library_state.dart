@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
+import 'catalogue_repository.dart';
 
 class LibraryState extends ChangeNotifier {
   LibraryState({this.client});
@@ -179,7 +180,7 @@ class LibraryState extends ChangeNotifier {
           : 'Checked Out';
       final cover = row['cover_path'] as String?;
       if (cover != null && !cover.startsWith('assets/')) {
-        row['cover_path'] = client!.storage
+        row['cover_display'] = client!.storage
             .from('book-covers')
             .getPublicUrl(cover);
       }
@@ -634,10 +635,17 @@ class LibraryException implements Exception {
 
 String friendlyError(Object error) {
   if (error is LibraryException) return error.message;
+  if (error is CatalogueException) return error.message;
   if (error is AuthException) return error.message;
   if (error is PostgrestException) {
     if (error.code == '23505') {
-      return 'You already have a pending request for this item.';
+      return 'A matching record or open reservation already exists.';
+    }
+    if (error.code == '23503') {
+      return 'This item has reservation history and cannot be deleted. Keep the record; disable the room or set the book copy count to zero when appropriate.';
+    }
+    if (error.code == '42501') {
+      return 'You do not have permission to make this change. Sign in with an administrator account.';
     }
     if (error.code == '23P01') {
       return 'This room is already booked for that time.';
