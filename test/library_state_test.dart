@@ -42,6 +42,31 @@ void main() {
     );
     expect(state.signedIn, false);
   });
+  test('demo role accounts authenticate with their assigned roles', () async {
+    for (final account in demoAccounts.skip(1)) {
+      final accountState = LibraryState();
+      await accountState.initialize();
+      await accountState.signIn(account.login, account.password, rememberMe: false);
+      expect(accountState.signedIn, true);
+      expect(accountState.role, account.role);
+      expect(accountState.email, account.email);
+      accountState.dispose();
+    }
+  });
+  test('login validation accepts campus formats and rejects other alphabets', () {
+    expect(validateLoginIdentifier('it23857162'), isNull);
+    expect(validateLoginIdentifier('EN20000000'), isNull);
+    expect(validateLoginIdentifier('hs20000000'), isNull);
+    expect(validateLoginIdentifier('BM20000000'), isNull);
+    expect(validateLoginIdentifier('lecturer@my.sliit.lk'), isNull);
+    expect(validateLoginIdentifier('IT2385716'), isNotNull);
+    expect(validateLoginIdentifier('IT23857162x'), isNotNull);
+    expect(validateLoginIdentifier('ІТ23857162'), isNotNull);
+    expect(validateLoginIdentifier('student@example.com'), isNotNull);
+    expect(validateLoginPassword(''), isNotNull);
+    expect(validateLoginPassword('short'), isNotNull);
+    expect(validateLoginPassword('Campus@123'), isNull);
+  });
   test(
     'member validation rejects duplicates, owner ID and insufficient groups',
     () {

@@ -6,13 +6,13 @@ create table public.profiles (
   campus_id text unique not null,
   full_name text not null,
   phone text not null default '',
-  role text not null default 'student' check (role in ('student','lecturer','admin')),
+  role text not null default 'student' check (role in ('student','lecturer','librarian','library_staff','admin')),
   avatar_path text
 );
 
 create function public.is_admin() returns boolean
 language sql stable security definer set search_path = public
-as $$ select exists(select 1 from profiles where id = auth.uid() and role = 'admin') $$;
+as $$ select exists(select 1 from profiles where id = auth.uid() and role in ('librarian','library_staff','admin')) $$;
 
 create table public.books (
   id uuid primary key default gen_random_uuid(),

@@ -647,7 +647,11 @@ class _ProfileState extends State<ProfileScreen> {
           const SizedBox(height: 24),
           for (final entry in {
             'Full Name': state.fullName,
-            state.role == 'lecturer' ? 'Lecturer ID' : 'Student ID':
+            state.role == 'lecturer'
+                ? 'Lecturer ID'
+                : state.isLibraryStaff
+                ? 'Staff ID'
+                : 'Student ID':
                 state.campusId,
             'Email Address': state.email,
             'Phone Number': state.phone,
@@ -687,7 +691,7 @@ class _ProfileState extends State<ProfileScreen> {
               }
             },
           ),
-          if (state.role == 'admin') ...[
+          if (state.isLibraryStaff) ...[
             const SizedBox(height: 20),
             PrimaryButton(
               'Admin Dashboard',

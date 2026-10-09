@@ -9,13 +9,13 @@ create table public.profiles (
   campus_id text unique not null,
   full_name text not null,
   phone text not null default '',
-  role text not null default 'student' check (role in ('student','lecturer','admin')),
+  role text not null default 'student' check (role in ('student','lecturer','librarian','library_staff','admin')),
   avatar_path text
 );
 
 create function public.is_admin() returns boolean
 language sql stable security definer set search_path = public
-as $$ select exists(select 1 from profiles where id = auth.uid() and role = 'admin') $$;
+as $$ select exists(select 1 from profiles where id = auth.uid() and role in ('librarian','library_staff','admin')) $$;
 
 create table public.books (
   id uuid primary key default gen_random_uuid(),
@@ -249,7 +249,7 @@ create function public.review_reservation(p_id uuid,p_status text,p_note text de
 returns void language plpgsql security definer set search_path = public as $$
 declare booking reservations; item books;
 begin
-  if not public.is_admin() then raise exception 'Administrator access required.'; end if;
+  if not public.is_admin() then raise exception 'Library staff access required.'; end if;
   select * into booking from reservations where id=p_id for update;
   if not found then raise exception 'Reservation not found.'; end if;
   if not ((booking.status='pending' and p_status in ('approved','rejected'))
@@ -275,7 +275,7 @@ create function public.review_extension(p_id uuid,p_approve boolean)
 returns void language plpgsql security definer set search_path = public as $$
 declare request extension_requests; booking reservations; local_end timestamp;
 begin
-  if not public.is_admin() then raise exception 'Administrator access required.'; end if;
+  if not public.is_admin() then raise exception 'Library staff access required.'; end if;
   select * into request from extension_requests where id=p_id for update;
   if not found or request.status<>'pending' then raise exception 'No pending extension found.'; end if;
   select * into booking from reservations where id=request.reservation_id for update;

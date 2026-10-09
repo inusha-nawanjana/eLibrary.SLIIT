@@ -42,7 +42,7 @@ void main() {
     await tester.ensureVisible(find.text('Reserve Book'));
     await tester.tap(find.text('Reserve Book'));
     await tester.pumpAndSettle();
-    expect(find.text('Student / Lecturer ID'), findsOneWidget);
+    expect(find.text('Campus ID or email'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).at(0), 'IT21234567');
     await tester.enterText(find.byType(TextFormField).at(1), 'Demo@12345');
     await tester.ensureVisible(find.text('Login'));

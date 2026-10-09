@@ -199,13 +199,13 @@ class _AdminState extends State<AdminScreen> {
   @override
   Widget build(BuildContext c) {
     final state = LibraryScope.of(c);
-    if (state.role != 'admin' || state.client == null) {
+    if (!state.isLibraryStaff || state.client == null) {
       return const Screen(
         title: 'Admin Dashboard',
         back: true,
         child: EmptyState(
-          'Administrator access required',
-          'Sign in with an administrator account.',
+          'Library staff access required',
+          'Sign in with a librarian, library staff, or administrator account.',
         ),
       );
     }

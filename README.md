@@ -21,16 +21,33 @@ For a browser preview of the same Flutter app:
 .\flutter.ps1 run -d chrome
 ```
 
+If Chrome or Edge cannot start because Windows reports that the paging file is too small, run the **eLibrary Demo (Web server)** VS Code configuration instead, or use:
+
+```powershell
+.\flutter.ps1 run -d web-server --web-port=5188 --no-web-resources-cdn
+```
+
+Open the localhost URL printed by Flutter in an already-open browser. Increase Windows virtual memory before retrying Edge: **System Properties → Advanced → Performance Settings → Advanced → Virtual memory**, select **System managed size**, then restart Windows.
+
 Android is the initial mobile target. The `web/` target is for convenient preview; this is a Flutter application, with Android project files in `android/`.
 
 ## Demo sign-in
 
 | Field | Value |
 | --- | --- |
-| Student ID | `IT21234567` |
+| Student ID or email | `IT21234567` or `it21234567@my.sliit.lk` |
 | Password | `Demo@12345` |
 
-The login screen includes a **Fill demo credentials** shortcut. These credentials work only in local demo mode. Real university credentials are not used.
+Additional local demo accounts are available on the login screen:
+
+| Role | Login | Password |
+| --- | --- | --- |
+| Lecturer | `lecturer@my.sliit.lk` | `Lecturer@12345` |
+| Librarian | `librarian@my.sliit.lk` | `Librarian@12345` |
+| Library staff | `library.staff@my.sliit.lk` | `Staff@12345` |
+| Administrator | `admin@my.sliit.lk` | `Admin@12345` |
+
+Student IDs must use `IT`, `EN`, `HS`, or `BM` followed by eight numbers, such as `it23857162`; lowercase is accepted and converted internally. Campus emails must use the configured `@my.sliit.lk` domain. The login form rejects blank passwords, short passwords, non-ASCII characters, and invalid identifiers. These credentials work only in local demo mode. Real university credentials are not used.
 
 Demo data is stored locally. Book and room requests appear as pending in **Activity** and create in-app notices. Extensions also remain pending; they do not silently change the original reservation. Sample dates are relative to today so future reservations remain testable. Uploads in demo mode are validated but are not sent anywhere. The reader and downloads include clearly labelled original sample PDFs, not full published books.
 
@@ -46,9 +63,9 @@ Demo data is stored locally. Book and room requests appear as pending in **Activ
 
 ## Supabase connection and CRUD
 
-The project is now configured for Supabase in the local ignored `config.local.json`. Follow [the Supabase setup guide](docs/SUPABASE_SETUP.md) to create Auth users and matching student/admin profiles. Demo mode remains available when the file is absent.
+The project is now configured for Supabase in the local ignored `config.local.json`. Follow [the Supabase setup guide](docs/SUPABASE_SETUP.md) to create Auth users and matching profiles for students, lecturers, librarians, library staff, or administrators. Demo mode remains available when the file is absent.
 
-Administrator CRUD is available under **Profile > Admin Dashboard > Books / Rooms** when connected to Supabase. It supports adding, listing, editing, and deleting catalogue records, cover/PDF replacement, and room enabling/disabling. Database policies restrict changes to administrators. Items with reservation history cannot be deleted; active loans protect the copy count.
+Library staff CRUD is available under **Profile > Admin Dashboard > Books / Rooms** when connected to Supabase. It supports adding, listing, editing, and deleting catalogue records, cover/PDF replacement, and room enabling/disabling. Database policies restrict changes to librarians, library staff, and administrators. Items with reservation history cannot be deleted; active loans protect the copy count.
 
 The app supports `SUPABASE_PUBLISHABLE_KEY` and the legacy `SUPABASE_ANON_KEY`. Select **eLibrary Supabase (Chrome)** for a browser or **eLibrary Supabase** for Android. Demo login credentials are separate from real Supabase accounts.
 

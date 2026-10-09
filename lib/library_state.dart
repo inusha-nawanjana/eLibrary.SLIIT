@@ -9,6 +9,130 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models.dart';
 import 'catalogue_repository.dart';
 
+class DemoAccount {
+  const DemoAccount({
+    required this.login,
+    required this.password,
+    required this.role,
+    required this.campusId,
+    required this.fullName,
+    required this.email,
+    this.aliases = const [],
+  });
+
+  final String login;
+  final String password;
+  final String role;
+  final String campusId;
+  final String fullName;
+  final String email;
+  final List<String> aliases;
+
+  String get label => switch (role) {
+    'library_staff' => 'Library staff',
+    'admin' => 'Administrator',
+    'librarian' => 'Librarian',
+    'lecturer' => 'Lecturer',
+    _ => 'Student',
+  };
+
+  bool matches(String value) {
+    final normalized = value.trim().toLowerCase();
+    return [login, ...aliases].any(
+      (candidate) => candidate.toLowerCase() == normalized,
+    );
+  }
+}
+
+const demoAccounts = <DemoAccount>[
+  DemoAccount(
+    login: 'IT21234567',
+    aliases: ['it21234567@my.sliit.lk'],
+    password: 'Demo@12345',
+    role: 'student',
+    campusId: 'IT21234567',
+    fullName: 'A. K. Perera',
+    email: 'IT21234567@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'lecturer@my.sliit.lk',
+    password: 'Lecturer@12345',
+    role: 'lecturer',
+    campusId: 'LEC00001',
+    fullName: 'Dr. N. Fernando',
+    email: 'lecturer@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'librarian@my.sliit.lk',
+    password: 'Librarian@12345',
+    role: 'librarian',
+    campusId: 'LIB00001',
+    fullName: 'Library Librarian',
+    email: 'librarian@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'library.staff@my.sliit.lk',
+    password: 'Staff@12345',
+    role: 'library_staff',
+    campusId: 'STAFF0001',
+    fullName: 'Library Staff',
+    email: 'library.staff@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'admin@my.sliit.lk',
+    password: 'Admin@12345',
+    role: 'admin',
+    campusId: 'LIB00001',
+    fullName: 'Library Administrator',
+    email: 'admin@my.sliit.lk',
+  ),
+];
+
+const _studentIdPattern = r'^(IT|EN|HS|BM)2[0-9]{7}$';
+final _campusEmailPattern = RegExp(
+  r"^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+$",
+);
+
+String campusEmailDomain() => String.fromEnvironment(
+      'CAMPUS_EMAIL_DOMAIN',
+      defaultValue: 'my.sliit.lk',
+    ).toLowerCase();
+
+String? validateLoginIdentifier(String? value) {
+  final input = value?.trim() ?? '';
+  if (input.isEmpty) return 'Enter your student ID or campus email.';
+  if (input.codeUnits.any((unit) => unit > 0x7f)) {
+    return 'Use English letters and numbers only.';
+  }
+  final upper = input.toUpperCase();
+  if (RegExp(_studentIdPattern).hasMatch(upper)) return null;
+  if (input.contains('@')) {
+    if (!_campusEmailPattern.hasMatch(input.toLowerCase())) {
+      return 'Enter a valid campus email address.';
+    }
+    final domain = input.substring(input.indexOf('@') + 1).toLowerCase();
+    if (domain != campusEmailDomain()) {
+      return 'Use your @${campusEmailDomain()} campus email address.';
+    }
+    return null;
+  }
+  return 'Use IT, EN, HS, or BM followed by 8 digits (for example IT23857162).';
+}
+
+String? validateLoginPassword(String? value) {
+  final input = value ?? '';
+  if (input.isEmpty) return 'Password is required.';
+  if (input.length < 8) return 'Password must be at least 8 characters.';
+  return null;
+}
+
+DemoAccount? demoAccountFor(String login, String password) {
+  for (final account in demoAccounts) {
+    if (account.matches(login) && account.password == password) return account;
+  }
+  return null;
+}
+
 class LibraryState extends ChangeNotifier {
   LibraryState({this.client});
   final SupabaseClient? client;
@@ -21,6 +145,8 @@ class LibraryState extends ChangeNotifier {
       fullName = 'A. K. Perera',
       phone = '+94 77 123 4567';
   String email = 'IT21234567@my.sliit.lk', role = 'student';
+  bool get isLibraryStaff =>
+      role == 'admin' || role == 'librarian' || role == 'library_staff';
   String? avatar;
   List<Book> books = [];
   List<LibraryRoom> rooms = [];
@@ -60,6 +186,9 @@ class LibraryState extends ChangeNotifier {
       signedIn = preferences.getBool('demo.signedIn') ?? false;
       fullName = preferences.getString('demo.name') ?? fullName;
       phone = preferences.getString('demo.phone') ?? phone;
+      campusId = preferences.getString('demo.campusId') ?? campusId;
+      email = preferences.getString('demo.email') ?? email;
+      role = preferences.getString('demo.role') ?? role;
       avatar = preferences.getString('demo.avatar');
     } else {
       signedIn = client!.auth.currentUser != null;
@@ -101,6 +230,9 @@ class LibraryState extends ChangeNotifier {
       );
       await preferences.setString('demo.name', fullName);
       await preferences.setString('demo.phone', phone);
+      await preferences.setString('demo.campusId', campusId);
+      await preferences.setString('demo.email', email);
+      await preferences.setString('demo.role', role);
     }
     await preferences.setStringList(
       '$storageKey.bookmarks',
@@ -118,15 +250,28 @@ class LibraryState extends ChangeNotifier {
     String password, {
     required bool rememberMe,
   }) async {
+    final loginError = validateLoginIdentifier(id);
+    if (loginError != null) throw LibraryException(loginError);
+    final passwordError = validateLoginPassword(password);
+    if (passwordError != null) throw LibraryException(passwordError);
     if (demo) {
-      if (id.trim().toUpperCase() != 'IT21234567' || password != 'Demo@12345') {
+      final account = demoAccountFor(id, password);
+      if (account == null) {
         throw const LibraryException(
-          'Use demo ID IT21234567 and password Demo@12345.',
+          'The demo login details are not recognised. Use one of the sample accounts shown below.',
         );
       }
       signedIn = true;
       remember = rememberMe;
+      campusId = account.campusId;
+      fullName = account.fullName;
+      email = account.email;
+      role = account.role;
       await preferences.setBool('demo.signedIn', rememberMe);
+      await preferences.setString('demo.campusId', campusId);
+      await preferences.setString('demo.name', fullName);
+      await preferences.setString('demo.email', email);
+      await preferences.setString('demo.role', role);
     } else {
       const domain = String.fromEnvironment(
         'CAMPUS_EMAIL_DOMAIN',

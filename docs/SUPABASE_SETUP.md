@@ -4,15 +4,15 @@ The project is configured locally for the Supabase project supplied for this che
 
 ## 1. Create the project and tables
 
-The supplied project already has the tables, row-level security policies, reservation functions, storage buckets, fourteen rooms, and five sample catalogue books. Do not rerun `supabase/setup.sql` or the migrations in this project.
+The supplied project already has the tables, row-level security policies, reservation functions, storage buckets, fourteen rooms, and five sample catalogue books. Do not rerun `supabase/setup.sql` or migrations 001 through 003 in this project.
 
-For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor. Do not run both the setup bundle and its individual migrations. For an existing database with migrations 001 and 002 already applied, run only `supabase/migrations/202610080003_catalogue_crud.sql`.
+For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor. Do not run both the setup bundle and its individual migrations. For an existing database with migrations 001 through 003 already applied, run `supabase/migrations/202610080004_staff_roles.sql` to enable librarian and library-staff profiles.
 
 ## 2. Create a student and administrator
 
-In Authentication > Users, create the accounts with confirmed email addresses. For student-ID login, use an address such as `it21234567@my.sliit.lk`. An administrator can sign in with their full email address.
+In Authentication > Users, create the accounts with confirmed email addresses. For student-ID login, use an address such as `it21234567@my.sliit.lk`; lecturers and library staff sign in with their full campus email addresses.
 
-Copy each account's Auth UUID and create its corresponding profile in the SQL Editor:
+Copy each account's Auth UUID and create its corresponding profile in the SQL Editor. Valid roles are `student`, `lecturer`, `librarian`, `library_staff`, and `admin`:
 
 ```sql
 insert into public.profiles (id, campus_id, full_name, phone, role)
@@ -22,7 +22,7 @@ insert into public.profiles (id, campus_id, full_name, phone, role)
 values ('REPLACE-WITH-ADMIN-AUTH-UUID', 'LIB00001', 'Library Administrator', '+94771234567', 'admin');
 ```
 
-Use the passwords chosen when creating those accounts. The demo password does not create or authenticate a Supabase account. The client cannot assign itself the admin role.
+Use the passwords chosen when creating those accounts. The demo passwords do not create or authenticate Supabase accounts. The client cannot assign itself a staff role.
 
 ## 3. Supply the public connection details
 

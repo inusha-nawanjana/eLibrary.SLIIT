@@ -289,9 +289,9 @@ class _BookEditorState extends State<BookEditorScreen> {
   @override
   Widget build(BuildContext c) {
     final state = LibraryScope.of(c);
-    if (!state.signedIn || state.role != 'admin' || state.client == null) {
+    if (!state.signedIn || !state.isLibraryStaff || state.client == null) {
       return const Screen(
-        title: 'Administrator access required',
+        title: 'Library staff access required',
         back: true,
         child: SizedBox.shrink(),
       );
@@ -437,9 +437,9 @@ class _RoomEditorState extends State<RoomEditorScreen> {
   @override
   Widget build(BuildContext c) {
     final state = LibraryScope.of(c);
-    if (!state.signedIn || state.role != 'admin' || state.client == null) {
+    if (!state.signedIn || !state.isLibraryStaff || state.client == null) {
       return const Screen(
-        title: 'Administrator access required',
+        title: 'Library staff access required',
         back: true,
         child: SizedBox.shrink(),
       );
