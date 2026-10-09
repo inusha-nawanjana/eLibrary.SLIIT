@@ -35,8 +35,8 @@ Android is the initial mobile target. The `web/` target is for convenient previe
 
 | Field | Value |
 | --- | --- |
-| Student ID or email | `IT21234567` or `it21234567@my.sliit.lk` |
-| Password | `Demo@12345` |
+| Student ID or email | `IT23857162` or `it23857162@my.sliit.lk` |
+| Password | `ITStudent@123` |
 
 Additional local demo accounts are available on the login screen:
 

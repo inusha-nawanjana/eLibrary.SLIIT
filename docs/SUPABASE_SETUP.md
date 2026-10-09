@@ -18,7 +18,7 @@ For a manual profile insert, valid roles are `student`, `lecturer`, `librarian`,
 
 ```sql
 insert into public.profiles (id, campus_id, full_name, phone, role)
-values ('REPLACE-WITH-STUDENT-AUTH-UUID', 'IT21234567', 'Student Name', '+94771234567', 'student');
+values ('REPLACE-WITH-STUDENT-AUTH-UUID', 'IT23857162', 'Student Name', '+94771234567', 'student');
 
 insert into public.profiles (id, campus_id, full_name, phone, role)
 values ('REPLACE-WITH-ADMIN-AUTH-UUID', 'LIB00001', 'Library Administrator', '+94771234567', 'admin');

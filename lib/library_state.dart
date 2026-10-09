@@ -46,15 +46,6 @@ class DemoAccount {
 
 const demoAccounts = <DemoAccount>[
   DemoAccount(
-    login: 'IT21234567',
-    aliases: ['it21234567@my.sliit.lk'],
-    password: 'Demo@12345',
-    role: 'student',
-    campusId: 'IT21234567',
-    fullName: 'A. K. Perera',
-    email: 'IT21234567@my.sliit.lk',
-  ),
-  DemoAccount(
     login: 'it23857162@my.sliit.lk',
     aliases: ['IT23857162'],
     password: 'ITStudent@123',
@@ -177,10 +168,10 @@ class LibraryState extends ChangeNotifier {
   bool signedIn = false;
   bool remember = false;
   int tab = 0;
-  String campusId = 'IT21234567',
-      fullName = 'A. K. Perera',
+  String campusId = 'IT23857162',
+      fullName = 'I. T. Student',
       phone = '+94 77 123 4567';
-  String email = 'IT21234567@my.sliit.lk', role = 'student';
+  String email = 'it23857162@my.sliit.lk', role = 'student';
   bool get isLibraryStaff =>
       role == 'admin' || role == 'librarian' || role == 'library_staff';
   String? avatar;
@@ -219,6 +210,18 @@ class LibraryState extends ChangeNotifier {
                 .map(LibraryNotice.fromJson)
                 .toList()
           : demoNotices();
+      final storedDemoEmail = preferences.getString('demo.email')?.toLowerCase();
+      final hasKnownDemoAccount = demoAccounts.any(
+        (account) => account.email.toLowerCase() == storedDemoEmail,
+      );
+      if (preferences.getBool('demo.signedIn') == true &&
+          !hasKnownDemoAccount) {
+        await preferences.remove('demo.signedIn');
+        await preferences.remove('demo.email');
+        await preferences.remove('demo.campusId');
+        await preferences.remove('demo.name');
+        await preferences.remove('demo.role');
+      }
       signedIn = preferences.getBool('demo.signedIn') ?? false;
       fullName = preferences.getString('demo.name') ?? fullName;
       phone = preferences.getString('demo.phone') ?? phone;
@@ -769,7 +772,7 @@ class LibraryState extends ChangeNotifier {
   Future<void> resetPassword(String login) async {
     if (demo) {
       throw const LibraryException(
-        'Demo password: Demo@12345. No reset email is sent in demo mode.',
+        'Demo password: ITStudent@123. No reset email is sent in demo mode.',
       );
     }
     const domain = String.fromEnvironment(

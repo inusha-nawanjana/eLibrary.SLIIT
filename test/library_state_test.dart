@@ -21,7 +21,7 @@ void main() {
       state.reserveBook(book, 'A. K. Perera', '0771234567'),
       throwsA(isA<LibraryException>()),
     );
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: true);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: true);
     final id = await state.reserveBook(book, 'A. K. Perera', '0771234567');
     expect(state.bookings.first.id, id);
     expect(state.bookings.first.status, 'Pending');
@@ -37,7 +37,7 @@ void main() {
   });
   test('wrong demo credentials never authenticate', () async {
     await expectLater(
-      state.signIn('IT21234567', 'wrong', rememberMe: false),
+      state.signIn('IT23857162', 'wrong', rememberMe: false),
       throwsA(isA<LibraryException>()),
     );
     expect(state.signedIn, false);
@@ -85,15 +85,15 @@ void main() {
           'IT2100001',
           'IT2100001',
           'IT2100002',
-        ], 'IT21234567'),
+        ], 'IT23857162'),
         throwsA(isA<LibraryException>()),
       );
       expect(
         () => validateMembers('learning', [
-          'IT21234567',
+          'IT23857162',
           'IT2100001',
           'IT2100002',
-        ], 'IT21234567'),
+        ], 'IT23857162'),
         throwsA(isA<LibraryException>()),
       );
       expect(
@@ -101,7 +101,7 @@ void main() {
           'IT2100001',
           'IT2100002',
           'IT2100003',
-        ], 'IT21234567'),
+        ], 'IT23857162'),
         throwsA(isA<LibraryException>()),
       );
       expect(
@@ -109,13 +109,13 @@ void main() {
           'IT2100001',
           'IT2100002',
           'IT2100003',
-        ], 'IT21234567'),
+        ], 'IT23857162'),
         returnsNormally,
       );
     },
   );
   test('room booking requires attendee photos and a future slot', () async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     final room = state.rooms.first,
         day = campusNow.add(const Duration(days: 2));
     final members = ['IT2100001', 'IT2100002', 'IT2100003'];
@@ -156,7 +156,7 @@ void main() {
     );
   });
   test('approved room intervals prevent conflicting reservations', () async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     final room = state.rooms.first,
         day = campusNow.add(const Duration(days: 2));
     state.bookings.add(
@@ -187,7 +187,7 @@ void main() {
     );
   });
   test('extension stays pending without silently changing due date', () async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     final booking = state.bookings.firstWhere(
       (b) => b.kind == 'book' && b.status == 'Active',
     );
@@ -209,7 +209,7 @@ void main() {
     );
   });
   test('unrecognised image bytes are rejected', () async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     await expectLater(
       state.uploadId('bad.png', Uint8List.fromList([1, 2, 3])),
       throwsA(isA<LibraryException>()),
