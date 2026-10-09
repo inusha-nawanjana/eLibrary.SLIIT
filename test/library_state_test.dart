@@ -53,6 +53,16 @@ void main() {
       accountState.dispose();
     }
   });
+  test('demo students cover every faculty ID prefix', () {
+    final facultyIds = demoAccounts
+        .where((account) => account.role == 'student')
+        .map((account) => account.campusId)
+        .toSet();
+    expect(
+      facultyIds,
+      containsAll(['IT23857162', 'EN23824681', 'HS23190754', 'BM22168432']),
+    );
+  });
   test('login validation accepts campus formats and rejects other alphabets', () {
     expect(validateLoginIdentifier('it23857162'), isNull);
     expect(validateLoginIdentifier('EN20000000'), isNull);

@@ -42,6 +42,10 @@ Additional local demo accounts are available on the login screen:
 
 | Role | Login | Password |
 | --- | --- | --- |
+| Faculty of Computing student | `it23857162@my.sliit.lk` | `ITStudent@123` |
+| Engineering student | `en23824681@my.sliit.lk` | `ENStudent@123` |
+| Humanities and Sciences student | `hs23190754@my.sliit.lk` | `HSStudent@123` |
+| School of Management student | `bm22168432@my.sliit.lk` | `BMStudent@123` |
 | Lecturer | `lecturer@my.sliit.lk` | `Lecturer@12345` |
 | Librarian | `librarian@my.sliit.lk` | `Librarian@12345` |
 | Library staff | `library.staff@my.sliit.lk` | `Staff@12345` |

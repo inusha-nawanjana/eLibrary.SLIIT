@@ -152,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       title: const Text('Contact IT Support'),
                       content: Text(
                         state.demo
-                            ? 'This is a local demonstration. Use one of the sample accounts shown below. Real campus login requires an authorised SLIIT integration.'
+                            ? 'This is a local demonstration. Sample accounts are documented in the project README. Real campus login requires an authorised SLIIT integration.'
                             : 'Contact your university IT help desk or library administrator using your campus portal. This app does not collect your password for a third-party portal.',
                       ),
                       actions: [
@@ -170,58 +170,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-            if (state.demo) ...[
-              const SizedBox(height: 28),
-              Panel(
-                color: surface,
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    Text('Sample demo accounts', style: txt(12, weight: bold)),
-                    const SizedBox(height: 8),
-                    SelectableText(
-                      '${demoAccounts.first.email}  ·  ${demoAccounts.first.password}',
-                      style: txt(12, color: muted),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        id.text = 'IT21234567';
-                        password.text = 'Demo@12345';
-                      },
-                      child: Text(
-                        'Fill demo credentials',
-                        style: txt(12, color: orange, weight: semi),
-                      ),
-                    ),
-                    for (final account in demoAccounts.skip(1))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: SelectableText(
-                                '${account.label}\n${account.login}\n${account.password}',
-                                style: txt(11, color: muted),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                id.text = account.login;
-                                password.text = account.password;
-                              },
-                              child: Text(
-                                'Use',
-                                style: txt(12, color: orange, weight: semi),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
       ),

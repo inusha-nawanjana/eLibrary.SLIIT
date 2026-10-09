@@ -8,11 +8,13 @@ The supplied project already has the tables, row-level security policies, reserv
 
 For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor. Do not run both the setup bundle and its individual migrations. For an existing database with migrations 001 through 003 already applied, run `supabase/migrations/202610080004_staff_roles.sql` to enable librarian and library-staff profiles.
 
-## 2. Create a student and administrator
+## 2. Create the sample accounts and profiles
 
-In Authentication > Users, create the accounts with confirmed email addresses. For student-ID login, use an address such as `it21234567@my.sliit.lk`; lecturers and library staff sign in with their full campus email addresses.
+In Authentication > Users, create the sample accounts from the README with confirmed email addresses. For student-ID login, use the faculty email addresses; lecturers and library staff sign in with their full campus email addresses.
 
-Copy each account's Auth UUID and create its corresponding profile in the SQL Editor. Valid roles are `student`, `lecturer`, `librarian`, `library_staff`, and `admin`:
+After creating the users, run `supabase/sample_profiles.sql` in the SQL Editor. It links each profile to `auth.users` by email, so no Auth UUID copying is needed. Run migration `202610080004_staff_roles.sql` first when using librarian or library-staff roles. The script never stores passwords in `public.profiles`.
+
+For a manual profile insert, valid roles are `student`, `lecturer`, `librarian`, `library_staff`, and `admin`:
 
 ```sql
 insert into public.profiles (id, campus_id, full_name, phone, role)
