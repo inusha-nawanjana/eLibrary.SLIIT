@@ -91,9 +91,9 @@ The verified debug APK is `build/app/outputs/flutter-apk/app-debug.apk`. It is f
 
 ## Local toolchain notes
 
-The current checkout is `E:/Website/eLibrary.SLIIT`. VS Code and `flutter.ps1` use workspace-relative paths, so moving the checkout does not leave old drive references in launch settings. Flutter, Pub packages, Gradle downloads, and temporary files live under the ignored `.tools/` directory. Build outputs live in `build/` in this checkout; no junction to another drive is required.
+The Git checkout is `E:/Website/eLibrary.SLIIT`; the Flutter project lives in its `Student View/` folder. Open `Student View/` in VS Code so its Flutter settings and launch configurations are active. The Flutter SDK, Pub packages, Gradle downloads, and temporary files live under the ignored `Student View/.tools/` directory. Build outputs live in `Student View/build/`.
 
-On a new clone, install the matching Flutter SDK before running the app:
+From the `Student View/` folder in a new clone, install the matching Flutter SDK before running the app:
 
 ```powershell
 git -c core.longpaths=true clone --depth 1 --branch 3.47.6 https://github.com/flutter/flutter.git .tools/flutter
