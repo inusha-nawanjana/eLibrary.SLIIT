@@ -12,7 +12,7 @@ For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor.
 
 In Authentication > Users, create the sample accounts from the README with confirmed email addresses. For student-ID login, use the faculty email addresses; lecturers and library staff sign in with their full campus email addresses.
 
-After creating the users, run `supabase/sample_profiles.sql` in the SQL Editor. It links each profile to `auth.users` by email, so no Auth UUID copying is needed. Run migration `202610080004_staff_roles.sql` first when using librarian or library-staff roles. The script never stores passwords in `public.profiles`.
+After creating and confirming the users, run `supabase/sample_profiles.sql` in the SQL Editor. It links each profile to `auth.users` by email, so no Auth UUID copying is needed. Run migration `202610080004_staff_roles.sql` first when using librarian or library-staff roles. The script never stores passwords in `public.profiles`. If a login reports `email_not_confirmed`, open **Authentication > Users**, open that user, and choose **Confirm email**; this cannot be bypassed safely by the mobile client.
 
 For a manual profile insert, valid roles are `student`, `lecturer`, `librarian`, `library_staff`, and `admin`:
 

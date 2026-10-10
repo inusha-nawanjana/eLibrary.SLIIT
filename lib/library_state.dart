@@ -37,10 +37,11 @@ class DemoAccount {
   };
 
   bool matches(String value) {
-    final normalized = value.trim().toLowerCase();
-    return [login, ...aliases].any(
-      (candidate) => candidate.toLowerCase() == normalized,
-    );
+    final normalized = normalizeCampusLogin(value);
+    return [
+      login,
+      ...aliases,
+    ].any((candidate) => normalizeCampusLogin(candidate) == normalized);
   }
 }
 
@@ -120,10 +121,20 @@ final _campusEmailPattern = RegExp(
   r"^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+$",
 );
 
-String campusEmailDomain() => String.fromEnvironment(
-      'CAMPUS_EMAIL_DOMAIN',
-      defaultValue: 'my.sliit.lk',
-    ).toLowerCase();
+// Environment defines are only valid in a const context. Keeping this value
+// compile-time also makes validation safe on Flutter web, where calling
+// String.fromEnvironment at runtime throws UnsupportedOperation.
+const _campusEmailDomain = String.fromEnvironment(
+  'CAMPUS_EMAIL_DOMAIN',
+  defaultValue: 'my.sliit.lk',
+);
+
+String campusEmailDomain() => _campusEmailDomain.toLowerCase();
+
+String normalizeCampusLogin(String value) {
+  final input = value.trim().toLowerCase();
+  return input.contains('@') ? input : '$input@${campusEmailDomain()}';
+}
 
 String? validateLoginIdentifier(String? value) {
   final input = value?.trim() ?? '';
@@ -210,7 +221,9 @@ class LibraryState extends ChangeNotifier {
                 .map(LibraryNotice.fromJson)
                 .toList()
           : demoNotices();
-      final storedDemoEmail = preferences.getString('demo.email')?.toLowerCase();
+      final storedDemoEmail = preferences
+          .getString('demo.email')
+          ?.toLowerCase();
       final hasKnownDemoAccount = demoAccounts.any(
         (account) => account.email.toLowerCase() == storedDemoEmail,
       );
@@ -297,7 +310,7 @@ class LibraryState extends ChangeNotifier {
       final account = demoAccountFor(id, password);
       if (account == null) {
         throw const LibraryException(
-          'The demo login details are not recognised. Use one of the sample accounts shown below.',
+          'The demo login details are not recognised. Check the email/ID and password in the README.',
         );
       }
       signedIn = true;
@@ -312,13 +325,7 @@ class LibraryState extends ChangeNotifier {
       await preferences.setString('demo.email', email);
       await preferences.setString('demo.role', role);
     } else {
-      const domain = String.fromEnvironment(
-        'CAMPUS_EMAIL_DOMAIN',
-        defaultValue: 'my.sliit.lk',
-      );
-      final login = id.contains('@')
-          ? id.trim()
-          : '${id.trim().toLowerCase()}@$domain';
+      final login = normalizeCampusLogin(id);
       await client!.auth.signInWithPassword(email: login, password: password);
       signedIn = true;
       await preferences.setBool('live.remember', rememberMe);
@@ -775,15 +782,7 @@ class LibraryState extends ChangeNotifier {
         'Demo password: ITStudent@123. No reset email is sent in demo mode.',
       );
     }
-    const domain = String.fromEnvironment(
-      'CAMPUS_EMAIL_DOMAIN',
-      defaultValue: 'my.sliit.lk',
-    );
-    await client!.auth.resetPasswordForEmail(
-      login.contains('@')
-          ? login.trim()
-          : '${login.trim().toLowerCase()}@$domain',
-    );
+    await client!.auth.resetPasswordForEmail(normalizeCampusLogin(login));
   }
 
   @override
@@ -820,7 +819,21 @@ class LibraryException implements Exception {
 String friendlyError(Object error) {
   if (error is LibraryException) return error.message;
   if (error is CatalogueException) return error.message;
-  if (error is AuthException) return error.message;
+  if (error is AuthException) {
+    final message = error.message.toLowerCase();
+    if (message.contains('invalid login credentials')) {
+      return 'Supabase rejected this email/password. Confirm the Auth user and reset its password in Supabase Dashboard.';
+    }
+    if (message.contains('email not confirmed')) {
+      return 'This account email is not confirmed. In Supabase Dashboard, open Authentication > Users, open the account, choose Confirm email, then try again.';
+    }
+    if (error is AuthRetryableFetchException ||
+        message.contains('retryable') ||
+        message.contains('connection')) {
+      return 'The app could not reach the campus login service. Check the phone internet connection and confirm the Supabase project is running, then try again.';
+    }
+    return error.message;
+  }
   if (error is PostgrestException) {
     if (error.code == '23505') {
       return 'A matching record or open reservation already exists.';
@@ -837,5 +850,11 @@ String friendlyError(Object error) {
     return error.message;
   }
   if (error is StorageException) return error.message;
+  final message = error.toString().toLowerCase();
+  if (message.contains('socketexception') ||
+      message.contains('failed host lookup') ||
+      message.contains('connection')) {
+    return 'The app could not reach the campus login service. Check the phone internet connection and confirm the Supabase project is running, then try again.';
+  }
   return 'Unable to complete this action. Check your connection and try again.';
 }
