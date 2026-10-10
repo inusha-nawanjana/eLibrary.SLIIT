@@ -24,7 +24,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final state = LibraryState();
     await state.initialize();
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     debugDisableShadows = false;
     await tester.runAsync(() async {
       final loader = FontLoader('Inter')

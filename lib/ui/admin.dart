@@ -1,10 +1,8 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../library_state.dart';
 import '../models.dart';
 import 'common.dart';
+import 'catalogue_admin.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -201,13 +199,13 @@ class _AdminState extends State<AdminScreen> {
   @override
   Widget build(BuildContext c) {
     final state = LibraryScope.of(c);
-    if (state.role != 'admin' || state.client == null) {
+    if (!state.isLibraryStaff || state.client == null) {
       return const Screen(
         title: 'Admin Dashboard',
         back: true,
         child: EmptyState(
-          'Administrator access required',
-          'Sign in with an administrator account.',
+          'Library staff access required',
+          'Sign in with a librarian, library staff, or administrator account.',
         ),
       );
     }
@@ -219,7 +217,7 @@ class _AdminState extends State<AdminScreen> {
         children: [
           const SizedBox(height: 16),
           Filters(
-            values: const ['Dashboard', 'Reservations', 'Add books'],
+            values: const ['Dashboard', 'Reservations', 'Books', 'Rooms'],
             selected: section,
             onSelected: (s) => setState(() => section = s),
           ),
@@ -336,199 +334,12 @@ class _AdminState extends State<AdminScreen> {
                   ),
                 ),
               ),
-          ] else
-            const AddBookForm(),
+          ] else if (section == 'Books')
+            const CatalogueManager(key: ValueKey('books'))
+          else
+            const CatalogueManager(key: ValueKey('rooms'), rooms: true),
         ],
       ),
     );
   }
-}
-
-class AddBookForm extends StatefulWidget {
-  const AddBookForm({super.key});
-  @override
-  State<AddBookForm> createState() => _AddBookState();
-}
-
-class _AddBookState extends State<AddBookForm> {
-  final title = TextEditingController(),
-      author = TextEditingController(),
-      year = TextEditingController(),
-      shelf = TextEditingController(),
-      synopsis = TextEditingController(),
-      copies = TextEditingController(text: '1');
-  final form = GlobalKey<FormState>();
-  String category = categoryNames.first;
-  PlatformFile? cover, pdf;
-  bool busy = false;
-  @override
-  void dispose() {
-    for (final c in [title, author, year, shelf, synopsis, copies]) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  Future<void> choose(bool ebook) async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ebook ? ['pdf'] : ['jpg', 'jpeg', 'png'],
-        withData: true,
-      );
-      if (result != null && mounted) {
-        setState(() {
-          if (ebook) {
-            pdf = result.files.single;
-          } else {
-            cover = result.files.single;
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) showError(context, e);
-    }
-  }
-
-  Future<void> save() async {
-    if (!form.currentState!.validate()) return;
-    if (cover?.bytes == null) {
-      showError(context, const LibraryException('Choose a book cover.'));
-      return;
-    }
-    setState(() => busy = true);
-    try {
-      final state = LibraryScope.of(context),
-          client = LibraryScope.of(context).client!;
-      final key = DateTime.now().microsecondsSinceEpoch.toString();
-      final png = cover!.extension?.toLowerCase() == 'png';
-      final coverPath = '$key.${png ? 'png' : 'jpg'}';
-      await client.storage
-          .from('book-covers')
-          .uploadBinary(
-            coverPath,
-            cover!.bytes!,
-            fileOptions: FileOptions(
-              contentType: png ? 'image/png' : 'image/jpeg',
-            ),
-          );
-      String? pdfPath;
-      if (pdf != null) {
-        if (pdf!.bytes == null) {
-          throw const LibraryException('Could not read the PDF.');
-        }
-        pdfPath = '$key.pdf';
-        await client.storage
-            .from('ebooks')
-            .uploadBinary(
-              pdfPath,
-              pdf!.bytes!,
-              fileOptions: const FileOptions(contentType: 'application/pdf'),
-            );
-      }
-      await client.from('books').insert({
-        'title': title.text.trim(),
-        'author': author.text.trim(),
-        'category': category,
-        'published_year': int.parse(year.text),
-        'shelf': shelf.text.trim(),
-        'synopsis': synopsis.text.trim(),
-        'copies': int.parse(copies.text),
-        'cover_path': coverPath,
-        'ebook_path': pdfPath,
-      });
-      await state.refresh();
-      for (final c in [title, author, year, shelf, synopsis]) {
-        c.clear();
-      }
-      copies.text = '1';
-      if (mounted) {
-        setState(() {
-          cover = null;
-          pdf = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Book added to the library.')),
-        );
-      }
-    } catch (e) {
-      if (mounted) showError(context, e);
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext c) => Form(
-    key: form,
-    child: Column(
-      children: [
-        Field('Book name', controller: title, validator: requiredValue),
-        const SizedBox(height: 16),
-        Field('Author', controller: author, validator: requiredValue),
-        const SizedBox(height: 16),
-        Field(
-          'Published year',
-          controller: year,
-          keyboard: TextInputType.number,
-          validator: (v) {
-            final n = int.tryParse(v ?? '');
-            return n != null && n > 0 && n <= campusNow.year
-                ? null
-                : 'Enter a valid year.';
-          },
-        ),
-        const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          initialValue: category,
-          items: categoryNames
-              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-              .toList(),
-          onChanged: (v) => setState(() => category = v!),
-          decoration: const InputDecoration(labelText: 'Category'),
-        ),
-        const SizedBox(height: 16),
-        Field(
-          'Shelf number and section',
-          controller: shelf,
-          validator: pdf == null ? requiredValue : null,
-        ),
-        const SizedBox(height: 16),
-        Field(
-          'Number of copies',
-          controller: copies,
-          keyboard: TextInputType.number,
-          validator: (v) => (int.tryParse(v ?? '') ?? -1) >= 0
-              ? null
-              : 'Enter a valid count.',
-        ),
-        const SizedBox(height: 16),
-        Field(
-          'Synopsis',
-          controller: synopsis,
-          lines: 4,
-          validator: requiredValue,
-        ),
-        const SizedBox(height: 16),
-        PrimaryButton(
-          cover?.name ?? 'Choose cover image',
-          outline: true,
-          onTap: () => choose(false),
-        ),
-        const SizedBox(height: 12),
-        PrimaryButton(
-          pdf?.name ?? 'Attach e-book PDF (optional)',
-          outline: true,
-          onTap: () => choose(true),
-        ),
-        if (pdf != null)
-          TextButton(
-            onPressed: () => setState(() => pdf = null),
-            child: const Text('Remove PDF'),
-          ),
-        const SizedBox(height: 24),
-        PrimaryButton('Add Book', onTap: save, busy: busy),
-      ],
-    ),
-  );
 }

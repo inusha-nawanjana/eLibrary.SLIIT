@@ -37,11 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> reset() async {
-    if (id.text.trim().isEmpty) {
-      showError(
-        context,
-        const LibraryException('Enter your student ID or email first.'),
-      );
+    final identifierError = validateLoginIdentifier(id.text);
+    if (identifierError != null) {
+      showError(context, LibraryException(identifierError));
       return;
     }
     try {
@@ -82,14 +80,14 @@ class _LoginScreenState extends State<LoginScreen> {
             const Brand(
               center: true,
               subtitleSize: 13,
-              subtitle: 'Use your student portal credentials',
+              subtitle: 'Use your campus portal credentials',
             ),
             const SizedBox(height: 36),
             Field(
-              'Student / Lecturer ID',
+              'Campus ID or email',
               controller: id,
-              hint: 'e.g. IT2104523',
-              validator: requiredValue,
+              hint: 'e.g. IT23857162 or lecturer@my.sliit.lk',
+              validator: validateLoginIdentifier,
             ),
             const SizedBox(height: 20),
             Field(
@@ -97,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: password,
               hint: '••••••••',
               obscure: hidden,
-              validator: requiredValue,
+              validator: validateLoginPassword,
               suffix: IconButton(
                 tooltip: hidden ? 'Show password' : 'Hide password',
                 onPressed: () => setState(() => hidden = !hidden),
@@ -154,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       title: const Text('Contact IT Support'),
                       content: Text(
                         state.demo
-                            ? 'This is a local demonstration. Use IT21234567 with password Demo@12345. Real campus login requires an authorised SLIIT integration.'
+                            ? 'This is a local demonstration. Sample accounts are documented in the project README. Real campus login requires an authorised SLIIT integration.'
                             : 'Contact your university IT help desk or library administrator using your campus portal. This app does not collect your password for a third-party portal.',
                       ),
                       actions: [
@@ -172,33 +170,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-            if (state.demo) ...[
-              const SizedBox(height: 28),
-              Panel(
-                color: surface,
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    Text('Demo account', style: txt(12, weight: bold)),
-                    const SizedBox(height: 4),
-                    SelectableText(
-                      'IT21234567  ·  Demo@12345',
-                      style: txt(12, color: muted),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        id.text = 'IT21234567';
-                        password.text = 'Demo@12345';
-                      },
-                      child: Text(
-                        'Fill demo credentials',
-                        style: txt(12, color: orange, weight: semi),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
       ),

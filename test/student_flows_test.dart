@@ -42,9 +42,9 @@ void main() {
     await tester.ensureVisible(find.text('Reserve Book'));
     await tester.tap(find.text('Reserve Book'));
     await tester.pumpAndSettle();
-    expect(find.text('Student / Lecturer ID'), findsOneWidget);
-    await tester.enterText(find.byType(TextFormField).at(0), 'IT21234567');
-    await tester.enterText(find.byType(TextFormField).at(1), 'Demo@12345');
+    expect(find.text('Campus ID or email'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).at(0), 'IT23857162');
+    await tester.enterText(find.byType(TextFormField).at(1), 'ITStudent@123');
     await tester.ensureVisible(find.text('Login'));
     await tester.tap(find.text('Login'));
     await tester.pumpAndSettle();
@@ -75,7 +75,7 @@ void main() {
   testWidgets('primary screens remain usable on a narrow phone', (
     tester,
   ) async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     await start(tester, size: const Size(320, 568));
     for (final tab in [
       'E-books',
@@ -94,7 +94,7 @@ void main() {
   testWidgets('activity filters and logout preserve public browsing', (
     tester,
   ) async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     await start(tester);
     state.selectTab(3);
     await tester.pumpAndSettle();

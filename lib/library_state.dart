@@ -7,6 +7,169 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
+import 'catalogue_repository.dart';
+
+class DemoAccount {
+  const DemoAccount({
+    required this.login,
+    required this.password,
+    required this.role,
+    required this.campusId,
+    required this.fullName,
+    required this.email,
+    this.aliases = const [],
+  });
+
+  final String login;
+  final String password;
+  final String role;
+  final String campusId;
+  final String fullName;
+  final String email;
+  final List<String> aliases;
+
+  String get label => switch (role) {
+    'library_staff' => 'Library staff',
+    'admin' => 'Administrator',
+    'librarian' => 'Librarian',
+    'lecturer' => 'Lecturer',
+    _ => 'Student',
+  };
+
+  bool matches(String value) {
+    final normalized = normalizeCampusLogin(value);
+    return [
+      login,
+      ...aliases,
+    ].any((candidate) => normalizeCampusLogin(candidate) == normalized);
+  }
+}
+
+const demoAccounts = <DemoAccount>[
+  DemoAccount(
+    login: 'it23857162@my.sliit.lk',
+    aliases: ['IT23857162'],
+    password: 'ITStudent@123',
+    role: 'student',
+    campusId: 'IT23857162',
+    fullName: 'I. T. Student',
+    email: 'it23857162@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'en23824681@my.sliit.lk',
+    aliases: ['EN23824681'],
+    password: 'ENStudent@123',
+    role: 'student',
+    campusId: 'EN23824681',
+    fullName: 'E. N. Student',
+    email: 'en23824681@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'hs23190754@my.sliit.lk',
+    aliases: ['HS23190754'],
+    password: 'HSStudent@123',
+    role: 'student',
+    campusId: 'HS23190754',
+    fullName: 'H. S. Student',
+    email: 'hs23190754@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'bm22168432@my.sliit.lk',
+    aliases: ['BM22168432'],
+    password: 'BMStudent@123',
+    role: 'student',
+    campusId: 'BM22168432',
+    fullName: 'B. M. Student',
+    email: 'bm22168432@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'lecturer@my.sliit.lk',
+    password: 'Lecturer@12345',
+    role: 'lecturer',
+    campusId: 'LEC00001',
+    fullName: 'Dr. N. Fernando',
+    email: 'lecturer@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'librarian@my.sliit.lk',
+    password: 'Librarian@12345',
+    role: 'librarian',
+    campusId: 'LIBR0001',
+    fullName: 'Library Librarian',
+    email: 'librarian@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'library.staff@my.sliit.lk',
+    password: 'Staff@12345',
+    role: 'library_staff',
+    campusId: 'STAFF0001',
+    fullName: 'Library Staff',
+    email: 'library.staff@my.sliit.lk',
+  ),
+  DemoAccount(
+    login: 'admin@my.sliit.lk',
+    password: 'Admin@12345',
+    role: 'admin',
+    campusId: 'LIB00001',
+    fullName: 'Library Administrator',
+    email: 'admin@my.sliit.lk',
+  ),
+];
+
+const _studentIdPattern = r'^(IT|EN|HS|BM)2[0-9]{7}$';
+final _campusEmailPattern = RegExp(
+  r"^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+$",
+);
+
+// Environment defines are only valid in a const context. Keeping this value
+// compile-time also makes validation safe on Flutter web, where calling
+// String.fromEnvironment at runtime throws UnsupportedOperation.
+const _campusEmailDomain = String.fromEnvironment(
+  'CAMPUS_EMAIL_DOMAIN',
+  defaultValue: 'my.sliit.lk',
+);
+
+String campusEmailDomain() => _campusEmailDomain.toLowerCase();
+
+String normalizeCampusLogin(String value) {
+  final input = value.trim().toLowerCase();
+  return input.contains('@') ? input : '$input@${campusEmailDomain()}';
+}
+
+String? validateLoginIdentifier(String? value) {
+  final input = value?.trim() ?? '';
+  if (input.isEmpty) return 'Enter your student ID or campus email.';
+  if (input.codeUnits.any((unit) => unit > 0x7f)) {
+    return 'Use English letters and numbers only.';
+  }
+  final upper = input.toUpperCase();
+  if (RegExp(_studentIdPattern).hasMatch(upper)) return null;
+  if (input.contains('@')) {
+    if (!_campusEmailPattern.hasMatch(input.toLowerCase())) {
+      return 'Enter a valid campus email address.';
+    }
+    final domain = input.substring(input.indexOf('@') + 1).toLowerCase();
+    if (domain != campusEmailDomain()) {
+      return 'Use your @${campusEmailDomain()} campus email address.';
+    }
+    return null;
+  }
+  return 'Use IT, EN, HS, or BM followed by 8 digits (for example IT23857162).';
+}
+
+String? validateLoginPassword(String? value) {
+  final input = value ?? '';
+  if (input.isEmpty) return 'Password is required.';
+  if (input.length < 8) return 'Password must be at least 8 characters.';
+  return null;
+}
+
+DemoAccount? demoAccountFor(String login, String password) {
+  for (final account in demoAccounts) {
+    if (account.matches(login) && account.password == password) return account;
+  }
+  return null;
+}
 
 class LibraryState extends ChangeNotifier {
   LibraryState({this.client});
@@ -16,10 +179,12 @@ class LibraryState extends ChangeNotifier {
   bool signedIn = false;
   bool remember = false;
   int tab = 0;
-  String campusId = 'IT21234567',
-      fullName = 'A. K. Perera',
+  String campusId = 'IT23857162',
+      fullName = 'I. T. Student',
       phone = '+94 77 123 4567';
-  String email = 'IT21234567@my.sliit.lk', role = 'student';
+  String email = 'it23857162@my.sliit.lk', role = 'student';
+  bool get isLibraryStaff =>
+      role == 'admin' || role == 'librarian' || role == 'library_staff';
   String? avatar;
   List<Book> books = [];
   List<LibraryRoom> rooms = [];
@@ -56,9 +221,26 @@ class LibraryState extends ChangeNotifier {
                 .map(LibraryNotice.fromJson)
                 .toList()
           : demoNotices();
+      final storedDemoEmail = preferences
+          .getString('demo.email')
+          ?.toLowerCase();
+      final hasKnownDemoAccount = demoAccounts.any(
+        (account) => account.email.toLowerCase() == storedDemoEmail,
+      );
+      if (preferences.getBool('demo.signedIn') == true &&
+          !hasKnownDemoAccount) {
+        await preferences.remove('demo.signedIn');
+        await preferences.remove('demo.email');
+        await preferences.remove('demo.campusId');
+        await preferences.remove('demo.name');
+        await preferences.remove('demo.role');
+      }
       signedIn = preferences.getBool('demo.signedIn') ?? false;
       fullName = preferences.getString('demo.name') ?? fullName;
       phone = preferences.getString('demo.phone') ?? phone;
+      campusId = preferences.getString('demo.campusId') ?? campusId;
+      email = preferences.getString('demo.email') ?? email;
+      role = preferences.getString('demo.role') ?? role;
       avatar = preferences.getString('demo.avatar');
     } else {
       signedIn = client!.auth.currentUser != null;
@@ -100,6 +282,9 @@ class LibraryState extends ChangeNotifier {
       );
       await preferences.setString('demo.name', fullName);
       await preferences.setString('demo.phone', phone);
+      await preferences.setString('demo.campusId', campusId);
+      await preferences.setString('demo.email', email);
+      await preferences.setString('demo.role', role);
     }
     await preferences.setStringList(
       '$storageKey.bookmarks',
@@ -117,23 +302,30 @@ class LibraryState extends ChangeNotifier {
     String password, {
     required bool rememberMe,
   }) async {
+    final loginError = validateLoginIdentifier(id);
+    if (loginError != null) throw LibraryException(loginError);
+    final passwordError = validateLoginPassword(password);
+    if (passwordError != null) throw LibraryException(passwordError);
     if (demo) {
-      if (id.trim().toUpperCase() != 'IT21234567' || password != 'Demo@12345') {
+      final account = demoAccountFor(id, password);
+      if (account == null) {
         throw const LibraryException(
-          'Use demo ID IT21234567 and password Demo@12345.',
+          'The demo login details are not recognised. Check the email/ID and password in the README.',
         );
       }
       signedIn = true;
       remember = rememberMe;
+      campusId = account.campusId;
+      fullName = account.fullName;
+      email = account.email;
+      role = account.role;
       await preferences.setBool('demo.signedIn', rememberMe);
+      await preferences.setString('demo.campusId', campusId);
+      await preferences.setString('demo.name', fullName);
+      await preferences.setString('demo.email', email);
+      await preferences.setString('demo.role', role);
     } else {
-      const domain = String.fromEnvironment(
-        'CAMPUS_EMAIL_DOMAIN',
-        defaultValue: 'my.sliit.lk',
-      );
-      final login = id.contains('@')
-          ? id.trim()
-          : '${id.trim().toLowerCase()}@$domain';
+      final login = normalizeCampusLogin(id);
       await client!.auth.signInWithPassword(email: login, password: password);
       signedIn = true;
       await preferences.setBool('live.remember', rememberMe);
@@ -179,7 +371,7 @@ class LibraryState extends ChangeNotifier {
           : 'Checked Out';
       final cover = row['cover_path'] as String?;
       if (cover != null && !cover.startsWith('assets/')) {
-        row['cover_path'] = client!.storage
+        row['cover_display'] = client!.storage
             .from('book-covers')
             .getPublicUrl(cover);
       }
@@ -587,18 +779,10 @@ class LibraryState extends ChangeNotifier {
   Future<void> resetPassword(String login) async {
     if (demo) {
       throw const LibraryException(
-        'Demo password: Demo@12345. No reset email is sent in demo mode.',
+        'Demo password: ITStudent@123. No reset email is sent in demo mode.',
       );
     }
-    const domain = String.fromEnvironment(
-      'CAMPUS_EMAIL_DOMAIN',
-      defaultValue: 'my.sliit.lk',
-    );
-    await client!.auth.resetPasswordForEmail(
-      login.contains('@')
-          ? login.trim()
-          : '${login.trim().toLowerCase()}@$domain',
-    );
+    await client!.auth.resetPasswordForEmail(normalizeCampusLogin(login));
   }
 
   @override
@@ -634,10 +818,31 @@ class LibraryException implements Exception {
 
 String friendlyError(Object error) {
   if (error is LibraryException) return error.message;
-  if (error is AuthException) return error.message;
+  if (error is CatalogueException) return error.message;
+  if (error is AuthException) {
+    final message = error.message.toLowerCase();
+    if (message.contains('invalid login credentials')) {
+      return 'Supabase rejected this email/password. Confirm the Auth user and reset its password in Supabase Dashboard.';
+    }
+    if (message.contains('email not confirmed')) {
+      return 'This account email is not confirmed. In Supabase Dashboard, open Authentication > Users, open the account, choose Confirm email, then try again.';
+    }
+    if (error is AuthRetryableFetchException ||
+        message.contains('retryable') ||
+        message.contains('connection')) {
+      return 'The app could not reach the campus login service. Check the phone internet connection and confirm the Supabase project is running, then try again.';
+    }
+    return error.message;
+  }
   if (error is PostgrestException) {
     if (error.code == '23505') {
-      return 'You already have a pending request for this item.';
+      return 'A matching record or open reservation already exists.';
+    }
+    if (error.code == '23503') {
+      return 'This item has reservation history and cannot be deleted. Keep the record; disable the room or set the book copy count to zero when appropriate.';
+    }
+    if (error.code == '42501') {
+      return 'You do not have permission to make this change. Sign in with an administrator account.';
     }
     if (error.code == '23P01') {
       return 'This room is already booked for that time.';
@@ -645,5 +850,11 @@ String friendlyError(Object error) {
     return error.message;
   }
   if (error is StorageException) return error.message;
+  final message = error.toString().toLowerCase();
+  if (message.contains('socketexception') ||
+      message.contains('failed host lookup') ||
+      message.contains('connection')) {
+    return 'The app could not reach the campus login service. Check the phone internet connection and confirm the Supabase project is running, then try again.';
+  }
   return 'Unable to complete this action. Check your connection and try again.';
 }

@@ -1,6 +1,25 @@
 {
   "dart.flutterSdkPath": ".tools/flutter",
   "editor.formatOnSave": true,
-  "files.exclude": {".tools": true, ".design": true},
-  "search.exclude": {".tools/**": true, ".design/**": true, "build/**": true}
+  "files.exclude": {
+    ".tools": true,
+    ".design": true
+  },
+  "search.exclude": {
+    ".tools/**": true,
+    ".design/**": true,
+    "build/**": true
+  },
+  "dart.env": {
+    "GRADLE_USER_HOME": "${workspaceFolder}/.tools/gradle",
+    "PUB_CACHE": "${workspaceFolder}/.tools/pub-cache",
+    "TEMP": "${workspaceFolder}/.tools/temp",
+    "TMP": "${workspaceFolder}/.tools/temp"
+  },
+  "terminal.integrated.env.windows": {
+    "GRADLE_USER_HOME": "${workspaceFolder}/.tools/gradle",
+    "PUB_CACHE": "${workspaceFolder}/.tools/pub-cache",
+    "TEMP": "${workspaceFolder}/.tools/temp",
+    "TMP": "${workspaceFolder}/.tools/temp"
+  }
 }

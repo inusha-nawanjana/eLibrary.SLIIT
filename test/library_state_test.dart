@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:elibrary_sliit/library_state.dart';
 import 'package:elibrary_sliit/models.dart';
 
@@ -21,7 +22,7 @@ void main() {
       state.reserveBook(book, 'A. K. Perera', '0771234567'),
       throwsA(isA<LibraryException>()),
     );
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: true);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: true);
     final id = await state.reserveBook(book, 'A. K. Perera', '0771234567');
     expect(state.bookings.first.id, id);
     expect(state.bookings.first.status, 'Pending');
@@ -37,10 +38,93 @@ void main() {
   });
   test('wrong demo credentials never authenticate', () async {
     await expectLater(
-      state.signIn('IT21234567', 'wrong', rememberMe: false),
+      state.signIn('IT23857162', 'wrong', rememberMe: false),
       throwsA(isA<LibraryException>()),
     );
     expect(state.signedIn, false);
+  });
+  test('demo role accounts authenticate with their assigned roles', () async {
+    for (final account in demoAccounts) {
+      final accountState = LibraryState();
+      await accountState.initialize();
+      await accountState.signIn(
+        account.login,
+        account.password,
+        rememberMe: false,
+      );
+      expect(accountState.signedIn, true);
+      expect(accountState.role, account.role);
+      expect(accountState.email, account.email);
+      accountState.dispose();
+    }
+  });
+  test('demo student accounts authenticate with campus email input', () async {
+    for (final account in demoAccounts.where(
+      (account) => account.role == 'student',
+    )) {
+      final accountState = LibraryState();
+      await accountState.initialize();
+      await accountState.signIn(
+        '  ${account.email.toUpperCase()}  ',
+        account.password,
+        rememberMe: false,
+      );
+      expect(accountState.signedIn, true);
+      expect(accountState.campusId, account.campusId);
+      accountState.dispose();
+    }
+  });
+  test('demo students cover every faculty ID prefix', () {
+    final facultyIds = demoAccounts
+        .where((account) => account.role == 'student')
+        .map((account) => account.campusId)
+        .toSet();
+    expect(
+      facultyIds,
+      containsAll(['IT23857162', 'EN23824681', 'HS23190754', 'BM22168432']),
+    );
+  });
+  test(
+    'login validation accepts campus formats and rejects other alphabets',
+    () {
+      expect(normalizeCampusLogin('IT23857162'), 'it23857162@my.sliit.lk');
+      expect(
+        normalizeCampusLogin('IT23857162@MY.SLIIT.LK'),
+        'it23857162@my.sliit.lk',
+      );
+      expect(
+        demoAccountFor('  IT23857162@MY.SLIIT.LK  ', 'ITStudent@123'),
+        same(demoAccounts.first),
+      );
+      expect(
+        demoAccountFor('  IT23857162  ', 'ITStudent@123'),
+        same(demoAccounts.first),
+      );
+      expect(validateLoginIdentifier('it23857162'), isNull);
+      expect(validateLoginIdentifier('EN20000000'), isNull);
+      expect(validateLoginIdentifier('hs20000000'), isNull);
+      expect(validateLoginIdentifier('BM20000000'), isNull);
+      expect(validateLoginIdentifier('lecturer@my.sliit.lk'), isNull);
+      expect(validateLoginIdentifier('IT2385716'), isNotNull);
+      expect(validateLoginIdentifier('IT23857162x'), isNotNull);
+      expect(validateLoginIdentifier('ІТ23857162'), isNotNull);
+      expect(validateLoginIdentifier('student@example.com'), isNotNull);
+      expect(validateLoginPassword(''), isNotNull);
+      expect(validateLoginPassword('short'), isNotNull);
+      expect(validateLoginPassword('Campus@123'), isNull);
+    },
+  );
+  test('live auth fetch failures explain the connection problem', () {
+    expect(
+      friendlyError(AuthRetryableFetchException(message: 'request failed')),
+      contains('could not reach the campus login service'),
+    );
+  });
+  test('unconfirmed live accounts explain the required setup', () {
+    expect(
+      friendlyError(const AuthApiException('Email not confirmed')),
+      contains('Authentication > Users'),
+    );
   });
   test(
     'member validation rejects duplicates, owner ID and insufficient groups',
@@ -50,15 +134,15 @@ void main() {
           'IT2100001',
           'IT2100001',
           'IT2100002',
-        ], 'IT21234567'),
+        ], 'IT23857162'),
         throwsA(isA<LibraryException>()),
       );
       expect(
         () => validateMembers('learning', [
-          'IT21234567',
+          'IT23857162',
           'IT2100001',
           'IT2100002',
-        ], 'IT21234567'),
+        ], 'IT23857162'),
         throwsA(isA<LibraryException>()),
       );
       expect(
@@ -66,7 +150,7 @@ void main() {
           'IT2100001',
           'IT2100002',
           'IT2100003',
-        ], 'IT21234567'),
+        ], 'IT23857162'),
         throwsA(isA<LibraryException>()),
       );
       expect(
@@ -74,13 +158,13 @@ void main() {
           'IT2100001',
           'IT2100002',
           'IT2100003',
-        ], 'IT21234567'),
+        ], 'IT23857162'),
         returnsNormally,
       );
     },
   );
   test('room booking requires attendee photos and a future slot', () async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     final room = state.rooms.first,
         day = campusNow.add(const Duration(days: 2));
     final members = ['IT2100001', 'IT2100002', 'IT2100003'];
@@ -121,7 +205,7 @@ void main() {
     );
   });
   test('approved room intervals prevent conflicting reservations', () async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     final room = state.rooms.first,
         day = campusNow.add(const Duration(days: 2));
     state.bookings.add(
@@ -152,7 +236,7 @@ void main() {
     );
   });
   test('extension stays pending without silently changing due date', () async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     final booking = state.bookings.firstWhere(
       (b) => b.kind == 'book' && b.status == 'Active',
     );
@@ -174,7 +258,7 @@ void main() {
     );
   });
   test('unrecognised image bytes are rejected', () async {
-    await state.signIn('IT21234567', 'Demo@12345', rememberMe: false);
+    await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     await expectLater(
       state.uploadId('bad.png', Uint8List.fromList([1, 2, 3])),
       throwsA(isA<LibraryException>()),

@@ -13,7 +13,7 @@ create function public.review_reservation(p_id uuid,p_status text,p_note text de
 returns void language plpgsql security definer set search_path = public as $$
 declare booking reservations; item books;
 begin
-  if not public.is_admin() then raise exception 'Administrator access required.'; end if;
+  if not public.is_admin() then raise exception 'Library staff access required.'; end if;
   select * into booking from reservations where id=p_id for update;
   if not found then raise exception 'Reservation not found.'; end if;
   if not ((booking.status='pending' and p_status in ('approved','rejected'))
@@ -39,7 +39,7 @@ create function public.review_extension(p_id uuid,p_approve boolean)
 returns void language plpgsql security definer set search_path = public as $$
 declare request extension_requests; booking reservations; local_end timestamp;
 begin
-  if not public.is_admin() then raise exception 'Administrator access required.'; end if;
+  if not public.is_admin() then raise exception 'Library staff access required.'; end if;
   select * into request from extension_requests where id=p_id for update;
   if not found or request.status<>'pending' then raise exception 'No pending extension found.'; end if;
   select * into booking from reservations where id=request.reservation_id for update;
