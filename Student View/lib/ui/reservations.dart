@@ -136,7 +136,8 @@ class RoomListScreen extends StatelessWidget {
   final String kind;
   @override
   Widget build(BuildContext c) {
-    final rooms = LibraryScope.of(c).rooms.where((r) => r.kind == kind);
+    final rooms = LibraryScope.of(c).rooms.where((r) => r.kind == kind).toList()
+      ..sort((a, b) => a.number.compareTo(b.number));
     return Screen(
       title: '${kind == 'learning' ? 'Learning' : 'Discussion'} Space',
       back: true,

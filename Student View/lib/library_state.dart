@@ -218,6 +218,7 @@ class LibraryState extends ChangeNotifier {
                   : [3, 5].contains(n),
             ),
       ];
+      _sortRoomsByNumber();
       bookings = preferences.containsKey('demo.bookings')
           ? decodeRows(preferences.getString('demo.bookings'))
                 .map(Booking.fromJson)
@@ -392,6 +393,7 @@ class LibraryState extends ChangeNotifier {
     rooms = rawRooms
         .map((r) => LibraryRoom(r['id'], r['kind'], r['number']))
         .toList();
+    _sortRoomsByNumber();
     if (signedIn) {
       final p = await client!
           .from('profiles')
@@ -461,6 +463,13 @@ class LibraryState extends ChangeNotifier {
           .toList();
     }
     notifyListeners();
+  }
+
+  void _sortRoomsByNumber() {
+    rooms.sort((a, b) {
+      final numberOrder = a.number.compareTo(b.number);
+      return numberOrder != 0 ? numberOrder : a.kind.compareTo(b.kind);
+    });
   }
 
   void selectTab(int index) {
