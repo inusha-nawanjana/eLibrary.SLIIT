@@ -19,7 +19,7 @@ Restart Vite after changing environment values. The dashboard prompts for a Supa
 
 - Dashboard counts are read from live reservations, books, and enabled rooms.
 - Pending book, learning-room, and discussion-room requests load from public.reservations.
-- Approvals and rejections call the existing review_reservation RPC. The note is stored in admin_note; existing database triggers notify the requester in the Student View.
+- Approvals set reservations directly to active, while rejections set them to rejected. Both call the review_reservation RPC; the note is stored in admin_note and database triggers notify the requester in the Student View.
 - Physical books and eBooks upload cover/PDF files to the existing book-covers and ebooks Storage buckets and create a public.books record.
 - Profile name, campus ID, role, phone, and email are read from the signed-in Supabase user and public.profiles.
 - Logging out clears the Supabase session.

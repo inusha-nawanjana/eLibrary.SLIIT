@@ -2,6 +2,16 @@ import 'dart:convert';
 
 String asset(String name) => 'assets/figma/$name';
 
+/// Converts reservation statuses from Supabase or older demo data into the
+/// labels used by the activity filters. Older projects stored an approved
+/// reservation as `approved`; it is now the same as an active reservation.
+String reservationStatusLabel(Object? raw) {
+  final value = (raw ?? '').toString().trim().toLowerCase();
+  if (value == 'approved' || value == 'active') return 'Active';
+  if (value.isEmpty) return 'Pending';
+  return '${value[0].toUpperCase()}${value.substring(1)}';
+}
+
 class Book {
   const Book({
     required this.id,
@@ -102,7 +112,7 @@ class Booking {
     kind: j['kind'],
     title: j['title'],
     subtitle: j['subtitle'],
-    status: j['status'],
+    status: reservationStatusLabel(j['status']),
     date: DateTime.parse(j['date']),
     itemId: j['itemId'] ?? '',
     start: j['start'] == null ? null : DateTime.parse(j['start']),
@@ -329,7 +339,7 @@ List<Booking> demoBookings() {
       kind: 'book',
       title: 'Introduction to ML',
       subtitle: 'Author: Ethem Alpaydin',
-      status: 'Approved',
+      status: 'Active',
       date: day.subtract(const Duration(days: 3)),
     ),
     Booking(
@@ -357,7 +367,7 @@ List<Booking> demoBookings() {
         subtitle: kind == 'learning'
             ? 'Capacity: 4 People'
             : 'Capacity: 8 People',
-        status: kind == 'learning' ? 'Pending' : 'Approved',
+        status: kind == 'learning' ? 'Pending' : 'Active',
         date: day,
         start: campusUtc(day, 13),
         end: campusUtc(day, 15),

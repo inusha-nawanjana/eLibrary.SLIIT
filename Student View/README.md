@@ -72,7 +72,7 @@ Demo data is stored locally. Book and room requests appear as pending in **Activ
 - Login before reservations, book collection agreement, confirmation and activity updates.
 - E-books, chapter previews, full-screen reading, PDF viewing, real file download, download history and bookmarks.
 - Eight learning rooms and six discussion rooms, member IDs, JPG/PNG uploads, booking dates and four two-hour slots.
-- Activity categories and status filters, book-date extensions and room-time extensions.
+- Activity categories with All, Pending, Active, Rejected, and Completed filters, book-date extensions, and room-time extensions.
 - Notifications with read state, profile photo selection, logout, splash screen.
 - Supabase-only administrator area: book/eBook and room CRUD, dashboard, reservation review, attendee ID inspection, book collection/return status, and extension decisions.
 

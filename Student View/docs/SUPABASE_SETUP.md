@@ -6,7 +6,7 @@ The project is configured locally for the Supabase project supplied for this che
 
 The supplied project already has the tables, row-level security policies, reservation functions, storage buckets, fourteen rooms, and five sample catalogue books. Do not rerun `supabase/setup.sql` or migrations 001 through 003 in this project.
 
-For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor. Do not run both the setup bundle and its individual migrations. For an existing database with migrations 001 through 003 already applied, run `supabase/migrations/202610080004_staff_roles.sql` to enable librarian and library-staff profiles.
+For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor. Do not run both the setup bundle and its individual migrations. For an existing database with migrations 001 through 003 already applied, run `supabase/migrations/202610080004_staff_roles.sql` to enable librarian and library-staff profiles, then run `supabase/migrations/202610130001_direct_active_reservations.sql`. The latter makes administrator approval immediately set a reservation to `active`; rejected reservations appear under the student's **Rejected** Activity filter.
 
 ## 2. Create the sample accounts and profiles
 

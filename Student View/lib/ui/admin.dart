@@ -45,15 +45,11 @@ class _AdminState extends State<AdminScreen> {
     setState(() => busy = true);
     try {
       final state = LibraryScope.of(context);
-      await state.client!.rpc(
-        'review_reservation',
-        params: {
-          'p_id': b.id,
-          'p_status': approve ? 'approved' : 'rejected',
-          'p_note': message,
-        },
+      await state.reviewReservation(
+        b,
+        approve ? 'active' : 'rejected',
+        note: message,
       );
-      await state.refresh();
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -314,17 +310,10 @@ class _AdminState extends State<AdminScreen> {
                               : 'Mark completed',
                           onTap: () async {
                             try {
-                              await state.client!.rpc(
-                                'review_reservation',
-                                params: {
-                                  'p_id': b.id,
-                                  'p_status': b.status == 'Approved'
-                                      ? 'active'
-                                      : 'completed',
-                                  'p_note': '',
-                                },
+                              await state.reviewReservation(
+                                b,
+                                b.status == 'Approved' ? 'active' : 'completed',
                               );
-                              await state.refresh();
                             } catch (e) {
                               if (c.mounted) showError(c, e);
                             }

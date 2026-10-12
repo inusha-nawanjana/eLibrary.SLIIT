@@ -31,9 +31,10 @@ class _ActivityState extends State<ActivityScreen> {
   Widget build(BuildContext c) {
     final state = LibraryScope.of(c),
         kind = ['book', 'learning', 'discussion'][section];
-    final bookings = state.bookings.where(
-      (b) => b.kind == kind && (filter == 'All' || b.status == filter),
-    );
+    final bookings = state.bookings.where((b) {
+      final status = reservationStatusLabel(b.status);
+      return b.kind == kind && (filter == 'All' || status == filter);
+    });
     return Screen(
       header: Padding(
         padding: const EdgeInsets.only(top: 16),
@@ -104,7 +105,13 @@ class _ActivityState extends State<ActivityScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Filters(
-                  values: const ['All', 'Pending', 'Active', 'Completed'],
+                  values: const [
+                    'All',
+                    'Pending',
+                    'Active',
+                    'Rejected',
+                    'Completed',
+                  ],
                   selected: filter,
                   onSelected: (v) => setState(() => filter = v),
                 ),
@@ -142,6 +149,7 @@ class BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext c) {
     final b = booking;
+    final status = reservationStatusLabel(b.status);
     final room = b.kind != 'book';
     final stamp = room && b.start != null
         ? '${dateLabel(campusDate(b.start!))}, ${slotLabel(campusDate(b.start!).hour)}'
@@ -174,23 +182,23 @@ class BookingCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${b.status == 'Active' && !room
+                    '${status == 'Active' && !room
                         ? 'Return Due'
-                        : b.status == 'Completed'
+                        : status == 'Completed'
                         ? 'Completed'
                         : 'Reservation'}: $stamp',
                     style: txt(11, color: muted),
                   ),
                 ],
               ),
-              Positioned(right: 0, top: 16, child: StatusBadge(b.status)),
+              Positioned(right: 0, top: 16, child: StatusBadge(status)),
             ],
           ),
           if (b.note.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('Admin note: ${b.note}', style: txt(12, color: muted)),
           ],
-          if (b.status == 'Active') ...[
+          if (status == 'Active') ...[
             const SizedBox(height: 12),
             PrimaryButton(
               b.extensionPending
@@ -648,10 +656,10 @@ class _ProfileState extends State<ProfileScreen> {
           for (final entry in {
             'Full Name': state.fullName,
             state.role == 'lecturer'
-                ? 'Lecturer ID'
-                : state.isLibraryStaff
-                ? 'Staff ID'
-                : 'Student ID':
+                    ? 'Lecturer ID'
+                    : state.isLibraryStaff
+                    ? 'Staff ID'
+                    : 'Student ID':
                 state.campusId,
             'Email Address': state.email,
             'Phone Number': state.phone,

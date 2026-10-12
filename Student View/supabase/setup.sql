@@ -252,7 +252,7 @@ begin
   if not public.is_admin() then raise exception 'Library staff access required.'; end if;
   select * into booking from reservations where id=p_id for update;
   if not found then raise exception 'Reservation not found.'; end if;
-  if not ((booking.status='pending' and p_status in ('approved','rejected'))
+  if not ((booking.status='pending' and p_status in ('active','rejected'))
     or (booking.status='approved' and p_status in ('active','cancelled'))
     or (booking.status='active' and p_status='completed'))
     then raise exception 'Invalid reservation status change.'; end if;

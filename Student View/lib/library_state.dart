@@ -224,6 +224,11 @@ class LibraryState extends ChangeNotifier {
                 .map(Booking.fromJson)
                 .toList()
           : demoBookings();
+      for (final booking in bookings) {
+        // Keep older local demo records compatible with the current status
+        // model, where an approved reservation is immediately active.
+        booking.status = reservationStatusLabel(booking.status);
+      }
       notices = preferences.containsKey('demo.notices')
           ? decodeRows(preferences.getString('demo.notices'))
                 .map(LibraryNotice.fromJson)
@@ -437,7 +442,7 @@ class LibraryState extends ChangeNotifier {
           subtitle: book != null
               ? 'Author: ${book['author']}'
               : 'Capacity: ${room?['capacity']} People',
-          status: status[0].toUpperCase() + status.substring(1),
+          status: reservationStatusLabel(status),
           date: DateTime.parse(r['due_date'] ?? r['created_at']),
           itemId: r['book_id'] ?? r['room_id'],
           start: r['starts_at'] == null ? null : DateTime.parse(r['starts_at']),
@@ -465,10 +470,30 @@ class LibraryState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reviewReservation(
+    Booking booking,
+    String status, {
+    String note = '',
+  }) async {
+    if (demo) {
+      booking.status = status[0].toUpperCase() + status.substring(1);
+      booking.note = note;
+      await persist();
+      return;
+    }
+    await client!.rpc(
+      'review_reservation',
+      params: {'p_id': booking.id, 'p_status': status, 'p_note': note},
+    );
+    await refresh();
+  }
+
   void _sortRoomsByNumber() {
     rooms.sort((a, b) {
-      final numberOrder = a.number.compareTo(b.number);
-      return numberOrder != 0 ? numberOrder : a.kind.compareTo(b.kind);
+      final kindOrder = (a.kind == 'learning' ? 0 : 1).compareTo(
+        b.kind == 'learning' ? 0 : 1,
+      );
+      return kindOrder != 0 ? kindOrder : a.number.compareTo(b.number);
     });
   }
 

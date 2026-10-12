@@ -177,15 +177,15 @@ function App() {
       if (!reservation) throw new Error('Reservation is no longer available. Refresh and try again.');
       const { error } = await supabase.rpc('review_reservation', {
         p_id: reservation.id,
-        p_status: active.a === 'approve' ? 'approved' : 'rejected',
+        p_status: active.a === 'approve' ? 'active' : 'rejected',
         p_note: active.a === 'reject' ? reason.trim() : decisionNote.trim(),
       });
       if (error) throw error;
-      const title = active.a === 'approve' ? 'Reservation Approved' : 'Request Rejected';
+      const title = active.a === 'approve' ? 'Reservation Activated' : 'Request Rejected';
       setActive(null);
       setDecisionNote('');
       await refresh();
-      setDialog({ title, text: active.a === 'approve' ? 'The reservation was approved and the requester will be notified.' : 'The rejection note was saved and the requester will be notified.', button: 'Done', extra: active.a === 'reject' ? reason.trim() : (decisionNote.trim() || undefined), kind: 'success' });
+      setDialog({ title, text: active.a === 'approve' ? 'The reservation is now active and the requester will be notified.' : 'The rejection note was saved and the requester will be notified.', button: 'Done', extra: active.a === 'reject' ? reason.trim() : (decisionNote.trim() || undefined), kind: 'success' });
     } catch (error) {
       setDialog({ title: 'Unable to update reservation', text: errorText(error), button: 'Close', kind: 'error' });
     } finally { setBusy(false); }
