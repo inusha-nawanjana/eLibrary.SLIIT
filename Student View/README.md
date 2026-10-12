@@ -25,6 +25,13 @@ For a browser preview of the same Flutter app:
 .\flutter.cmd run -d chrome
 ```
 
+The wrapper keeps Flutter's SDK and temporary files on the normal project path
+and reuses the existing workspace package cache when it is available. It also
+applies the Windows native-assets path fix used by `pdfrx`, so the space in
+`Student View` does not need a `Z:`/`Y:` drive alias. If dependencies have not
+been installed in this checkout, run `.\flutter.cmd pub get` once before
+starting the preview.
+
 If Chrome or Edge cannot start because Windows reports that the paging file is too small, run the **eLibrary Demo (Web server)** VS Code configuration instead, or use:
 
 ```powershell
