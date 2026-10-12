@@ -28,15 +28,15 @@ Use the passwords chosen when creating those accounts. The demo passwords do not
 
 ## 3. Supply the public connection details
 
-Copy `config.example.json` to the ignored `config.local.json`. Set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` using the project's Connect panel. A legacy anon key also works; the app still accepts the older `SUPABASE_ANON_KEY` name. Never use a secret or service-role key in this file or app.
+Copy `config.example.json` to the ignored `config.local.json`. Set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` using the project's Connect panel. A legacy anon key also works; the app still accepts the older `SUPABASE_ANON_KEY` name. Set `ADMIN_DASHBOARD_URL` to the Vite dashboard address (the local default is `http://localhost:5173`). Never use a secret or service-role key in this file or app.
 
 Choose **eLibrary Supabase (Chrome)** in VS Code, or run:
 
 ```powershell
-.\flutter.ps1 run -d chrome --web-port=5188 --no-web-resources-cdn --dart-define-from-file=config.local.json
+.\flutter.cmd run -d chrome --web-port=5188 --no-web-resources-cdn --dart-define-from-file=config.local.json
 ```
 
-For an Android device, choose **eLibrary Supabase** or omit `-d chrome` from the command. Fully restart the app after changing compile-time connection details.
+For an Android device, choose **eLibrary Supabase** or omit `-d chrome` from the command. When the dashboard runs on the development computer, use a reachable address for `ADMIN_DASHBOARD_URL` on the device (for example `http://10.0.2.2:5173` for an Android emulator) and start Vite with `npm run dev -- --host 0.0.0.0`. Fully restart the app after changing compile-time connection details.
 
 ## 4. Verify CRUD
 

@@ -9,6 +9,8 @@ npm install
 npm run dev
 ```
 
+The Student View opens this dashboard for librarian, library staff, and administrator accounts. During local development it uses `http://localhost:5173`; set the Student View `ADMIN_DASHBOARD_URL` define when the dashboard is hosted elsewhere.
+
 ## Current screens
 
 - Admin dashboard overview with reservation and space counts.

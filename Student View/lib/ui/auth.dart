@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../library_state.dart';
 import '../models.dart';
@@ -26,8 +27,27 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!form.currentState!.validate()) return;
     setState(() => busy = true);
     try {
-      await LibraryScope.of(context)
-          .signIn(id.text, password.text, rememberMe: remember);
+      final state = LibraryScope.of(context);
+      await state.signIn(id.text, password.text, rememberMe: remember);
+      if (state.isLibraryStaff) {
+        final uri = Uri.tryParse(adminDashboardUrl());
+        if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+          throw const LibraryException(
+            'The Admin Dashboard URL is not configured correctly.',
+          );
+        }
+        final opened = await launchUrl(
+          uri,
+          mode: LaunchMode.platformDefault,
+          webOnlyWindowName: '_self',
+        );
+        if (!opened) {
+          throw const LibraryException(
+            'Unable to open the Admin Dashboard. Make sure the dashboard is running and try again.',
+          );
+        }
+        return;
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) showError(context, e);

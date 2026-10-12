@@ -131,6 +131,13 @@ const _campusEmailDomain = String.fromEnvironment(
 
 String campusEmailDomain() => _campusEmailDomain.toLowerCase();
 
+const _adminDashboardUrl = String.fromEnvironment(
+  'ADMIN_DASHBOARD_URL',
+  defaultValue: 'http://localhost:5173',
+);
+
+String adminDashboardUrl() => _adminDashboardUrl;
+
 String normalizeCampusLogin(String value) {
   final input = value.trim().toLowerCase();
   return input.contains('@') ? input : '$input@${campusEmailDomain()}';
