@@ -15,6 +15,10 @@ import 'ui/auth.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.manual,
+    overlays: const [SystemUiOverlay.bottom],
+  );
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -237,13 +241,6 @@ class SplashScreen extends StatelessWidget {
               top: s.maxHeight * 545 / 844,
               child: const Brand(size: 36, center: true),
             ),
-            if (previewChrome)
-              const Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: DeviceStatus(),
-              ),
             if (previewChrome)
               const Positioned(
                 bottom: 0,

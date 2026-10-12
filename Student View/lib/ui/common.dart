@@ -159,32 +159,6 @@ class Brand extends StatelessWidget {
   );
 }
 
-class DeviceStatus extends StatelessWidget {
-  const DeviceStatus({super.key});
-  @override
-  Widget build(BuildContext c) => SizedBox(
-    height: 44,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('9:41', style: txt(14, weight: semi)),
-          Row(
-            children: [
-              const Glyph('53dce.svg'),
-              const SizedBox(width: 6),
-              const Glyph('f22ae.svg'),
-              const SizedBox(width: 6),
-              SvgPicture.asset(asset('8deea.svg'), width: 28, height: 20),
-            ],
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 class Screen extends StatelessWidget {
   const Screen({
     super.key,
@@ -214,7 +188,6 @@ class Screen extends StatelessWidget {
       bottom: false,
       child: Column(
         children: [
-          if (previewChrome) const DeviceStatus(),
           if (header != null)
             header!
           else if (title != null)
