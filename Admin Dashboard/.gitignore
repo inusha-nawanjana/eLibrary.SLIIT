@@ -2,3 +2,4 @@
 dist/
 .vite/
 *.tsbuildinfo
+.env.local
