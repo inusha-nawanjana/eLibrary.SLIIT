@@ -30,3 +30,14 @@
 
 
 @media(max-width:760px){.sidebar-user{display:none}}
+
+.status-tabs{display:flex;gap:8px;width:100%;margin:18px 0 20px;overflow:auto;padding:0 0 4px;scrollbar-width:none}
+.status-tabs::-webkit-scrollbar{display:none}
+.status-tabs button{flex:none;min-height:34px;padding:0 16px;border:0;border-radius:20px;background:#f1f3f6;color:#607289;font-size:13px;font-weight:650;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.status-tabs button.status-sel{background:#e9781e;color:#fff}
+.status-tabs button small{font-size:10px;opacity:.76}
+.request-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.request-title-row h2{min-width:0}
+.reservation-status{flex:none;padding:4px 8px;border-radius:14px;background:#eef1f5;color:#607289;font-size:10px;font-weight:700;text-transform:capitalize}
+.status-pending{background:#fff2dd;color:#bd6b13}.status-approved,.status-active{background:#e1f7ee;color:#13835e}.status-rejected{background:#ffeded;color:#ce3940}.status-completed{background:#e9eef8;color:#435b82}.status-cancelled{background:#f0f1f3;color:#737d8b}
+@media(min-width:761px){.status-tabs{margin:0 0 22px}.status-tabs button{min-height:36px;padding:0 18px}.reservation-status{font-size:11px}}

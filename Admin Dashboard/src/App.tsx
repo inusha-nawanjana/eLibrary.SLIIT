@@ -4,6 +4,7 @@ import { backendConfigured, supabase } from './backend';
 
 type Page = 'dashboard' | 'pending' | 'addBooks' | 'profile';
 type Kind = 'book' | 'learning' | 'discussion';
+type ReservationFilter = 'all' | 'pending' | 'active' | 'rejected' | 'completed';
 type Reservation = {
   id: string;
   kind: Kind;
@@ -25,11 +26,12 @@ type Reservation = {
 type Room = { id: string; kind: 'learning' | 'discussion'; number: number; capacity: number; enabled: boolean };
 type Book = { id: string; title: string; copies: number; ebook_path: string | null };
 type Profile = { id: string; campus_id: string; full_name: string; phone: string; role: string; avatar_path: string | null };
-type RequestCard = { id: string; k: Kind; title: string; person: string; capacity?: string; time?: string; when?: string };
+type RequestCard = { id: string; k: Kind; title: string; person: string; status: string; capacity?: string; time?: string; when?: string };
 type Dialog = { title: string; text: string; button: string; extra?: string; kind?: 'error' | 'success' };
 
 const categories = ['Computer Science', 'Management', 'Law', 'Cookery', 'Data Science', 'Engineering'];
 const tabs: [Kind, string][] = [['book', 'Books'], ['learning', 'Learning Space'], ['discussion', 'Discussion Space']];
+const statusTabs: [ReservationFilter, string][] = [['all', 'All'], ['pending', 'Pending'], ['active', 'Active'], ['rejected', 'Rejected'], ['completed', 'Complete']];
 const allowedRoles = ['admin', 'librarian', 'library_staff'];
 
 function Icon({ name }: { name: string }) {
@@ -61,9 +63,11 @@ function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [page, setPage] = useState<Page>('dashboard');
   const [kind, setKind] = useState<Kind>('book');
+  const [reservationFilter, setReservationFilter] = useState<ReservationFilter>('all');
   const [form, setForm] = useState<'physical' | 'ebook' | 'note' | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [ebookFile, setEbookFile] = useState<File | null>(null);
+  const [notePhotos, setNotePhotos] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -103,6 +107,8 @@ function App() {
       const staff = profileResult.data as Profile;
       if (!allowedRoles.includes(staff.role)) {
         await supabase.auth.signOut();
+        setEmail('');
+        setPassword('');
         setAuthError('This account does not have librarian, library staff, or administrator access.');
         setSession(null);
         return;
@@ -143,13 +149,30 @@ function App() {
     const { error } = await supabase.auth.signOut();
     setBusy(false);
     if (error) setDialog({ title: 'Could not log out', text: error.message, button: 'Close', kind: 'error' });
-    else { setSession(null); setProfile(null); setReservations([]); setRooms([]); setBooks([]); setPage('dashboard'); }
+    else {
+      setEmail('');
+      setPassword('');
+      setAuthError('');
+      setSession(null);
+      setProfile(null);
+      setReservations([]);
+      setRooms([]);
+      setBooks([]);
+      setPage('dashboard');
+    }
   };
 
   const go = (next: Page) => { setPage(next); setForm(null); setCoverFile(null); setEbookFile(null); };
-  const jump = (nextKind: Kind) => { setKind(nextKind); go('pending'); };
+  const jump = (nextKind: Kind) => { setKind(nextKind); setReservationFilter('pending'); go('pending'); };
   const pending = useMemo(() => reservations.filter(r => r.status === 'pending'), [reservations]);
-  const requestCards = useMemo(() => pending.filter(r => r.kind === kind).map(r => {
+  const categoryReservations = useMemo(() => reservations.filter(r => r.kind === kind), [reservations, kind]);
+  const filteredReservations = useMemo(() => categoryReservations.filter(r => {
+    if (reservationFilter === 'all') return true;
+    if (reservationFilter === 'active') return ['approved', 'active'].includes(r.status);
+    if (reservationFilter === 'completed') return r.status === 'completed';
+    return r.status === reservationFilter;
+  }), [categoryReservations, reservationFilter]);
+  const requestCards = useMemo(() => filteredReservations.map(r => {
     const title = r.kind === 'book'
       ? (r.books?.title ?? 'Book reservation')
       : `${r.kind === 'learning' ? 'Learning' : 'Discussion'} Room ${r.rooms?.number ?? ''}`;
@@ -157,8 +180,8 @@ function App() {
     const time = r.starts_at && r.ends_at
       ? `${new Date(r.starts_at).toLocaleString()} – ${new Date(r.ends_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
       : '';
-    return { id: r.id, k: r.kind, title, person: `${r.full_name} (${r.phone})`, capacity: r.rooms ? `${r.rooms.capacity} People` : undefined, time, when } satisfies RequestCard;
-  }), [pending, kind]);
+    return { id: r.id, k: r.kind, title, person: `${r.full_name} (${r.phone})`, status: r.status, capacity: r.rooms ? `${r.rooms.capacity} People` : undefined, time, when } satisfies RequestCard;
+  }), [filteredReservations]);
 
   const availableRooms = (roomKind: 'learning' | 'discussion') => {
     const now = Date.now();
@@ -235,15 +258,53 @@ function App() {
     } finally { setBusy(false); }
   };
 
+  const submitAnnouncement = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase || !session) return;
+    const values = new FormData(event.currentTarget);
+    const title = String(values.get('heading') ?? '').trim();
+    const body = String(values.get('description') ?? '').trim();
+    const invalidPhoto = notePhotos.find(file =>
+      !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024,
+    );
+    if (invalidPhoto) {
+      setDialog({ title: 'Invalid announcement photo', text: 'Use JPG, PNG, or WebP photos up to 5 MB each.', button: 'Close', kind: 'error' });
+      return;
+    }
+
+    setBusy(true);
+    const uploaded: string[] = [];
+    const token = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    try {
+      for (const [index, file] of notePhotos.entries()) {
+        const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+        const path = `announcements/${token}-${index}.${extension}`;
+        const { error } = await supabase.storage.from('announcement-images').upload(path, file, { contentType: file.type, upsert: false });
+        if (error) throw error;
+        uploaded.push(path);
+      }
+      const { error } = await supabase.from('announcements').insert({ title, body, image_paths: uploaded, author_id: session.user.id });
+      if (error) throw error;
+      setNotePhotos([]);
+      setForm(null);
+      setDialog({ title: 'Note Published Successfully', text: 'The update is saved and has been sent to users in the Student View notifications.', button: 'Done', kind: 'success' });
+    } catch (error) {
+      if (uploaded.length) {
+        try { await supabase.storage.from('announcement-images').remove(uploaded); } catch { /* Keep the original backend error. */ }
+      }
+      setDialog({ title: 'Could not publish note', text: errorText(error), button: 'Close', kind: 'error' });
+    } finally { setBusy(false); }
+  };
+
   const metric = (label: ReactNode, value: string, tone = 'orange', onClick?: () => void) =>
     <button className="metric" onClick={onClick}><span>{label}</span><b className={tone}>{value}</b></button>;
   const field = (label: string, child: ReactNode) => <label className="field"><span>{label}</span>{child}</label>;
   const upload = (label: string, accept: string, onFile: (file: File | null) => void, selected?: File | null) =>
-    <label className="upload"><span>{label}</span><span className="drop">▣<small>{selected?.name ?? 'Drag &amp; drop or Click to upload'}</small><input type="file" accept={accept} onChange={event => onFile(event.currentTarget.files?.[0] ?? null)}/></span></label>;
+    <label className="upload"><span>{label}</span><span className="drop">▣<small>{selected?.name ?? 'Drag & drop or Click to upload'}</small><input type="file" accept={accept} onChange={event => onFile(event.currentTarget.files?.[0] ?? null)}/></span></label>;
 
   if (!backendConfigured) return <main className="auth-screen"><section className="auth-card"><div className="auth-brand">eLibrary<span>.SLIIT</span></div><h1>Backend setup required</h1><p>Configure the Supabase URL and publishable key in the local <code>.env.local</code> file, then restart the dashboard.</p></section></main>;
   if (!authReady || (session && !profile && loading)) return <main className="auth-screen"><section className="auth-card"><div className="spinner"/><p>Connecting to the eLibrary service…</p></section></main>;
-  if (!session) return <main className="auth-screen"><form className="auth-card" onSubmit={signIn}><div className="auth-brand">eLibrary<span>.SLIIT</span></div><p className="eyebrow">LIBRARY STAFF PORTAL</p><h1>Welcome back</h1><p>Sign in with your SLIIT library staff account.</p>{authError&&<div className="error-banner">{authError}</div>}<label className="auth-field"><span>Email address</span><input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@my.sliit.lk"/></label><label className="auth-field"><span>Password</span><input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="auth-submit" disabled={signingIn}>{signingIn?'Signing in…':'Sign In'}</button></form></main>;
+  if (!session) return <main className="auth-screen"><form className="auth-card" onSubmit={signIn} autoComplete="off"><div className="auth-brand">eLibrary<span>.SLIIT</span></div><p className="eyebrow">LIBRARY STAFF PORTAL</p><h1>Welcome back</h1><p>Sign in with your SLIIT library staff account.</p>{authError&&<div className="error-banner">{authError}</div>}<label className="auth-field"><span>Email address</span><input type="email" name="admin-login-email" autoComplete="off" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@my.sliit.lk"/></label><label className="auth-field"><span>Password</span><input type="password" name="admin-login-password" autoComplete="new-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="auth-submit" disabled={signingIn}>{signingIn?'Signing in…':'Sign In'}</button></form></main>;
 
   return <main className="device">
     <div className="content">
@@ -255,10 +316,10 @@ function App() {
         {metric(<>Available Learning<br/>Spaces</>,availableRooms('learning'),'green')}
         {metric(<>Available Discussion<br/>Spaces</>,availableRooms('discussion'),'green')}
         {metric(<>Books Reserved<br/>or Borrowed Now</>,String(reservations.filter(r=>r.kind==='book'&&['approved','active'].includes(r.status)).length),'navy',()=>jump('book'))}</div></>}
-      {page==='pending'&&<><h1 className="title">Pending Reservations</h1><div className="tabs">{tabs.map(([k,t])=><button className={kind===k?'sel':''} key={k} onClick={()=>setKind(k)}>{t}<small className="tab-count">{pending.filter(r=>r.kind===k).length}</small></button>)}</div><section className="requests">{requestCards.map(r=><article className="request" key={r.id}><h2>{r.title}</h2><p>{r.k==='discussion'?'Lecturer:':'Student:'} {r.person}</p>{r.k==='book'?<p>Requested: {r.when}</p>:<><p>Capacity: {r.capacity}</p><p className="time">Reservation: {r.time}</p></>}<p>Reservation ID: <b>#{r.id}</b></p><div className="actions"><button disabled={busy} onClick={()=>setActive({r,a:'approve'})}>Approve</button><button disabled={busy} onClick={()=>setActive({r,a:'reject'})}>Reject</button></div></article>)}{!loading&&requestCards.length===0&&<p className="empty">No pending reservations</p>}</section></>}
+      {page==='pending'&&<><h1 className="title">Reservations</h1><div className="tabs">{tabs.map(([k,t])=><button className={kind===k?'sel':''} key={k} onClick={()=>setKind(k)}>{t}</button>)}</div><div className="status-tabs" role="tablist" aria-label="Filter reservations by status">{statusTabs.map(([status,label])=><button key={status} role="tab" aria-selected={reservationFilter===status} className={reservationFilter===status?'status-sel':''} onClick={()=>setReservationFilter(status)}>{label}<small>{categoryReservations.filter(r=>status==='all'||(status==='active'?['approved','active'].includes(r.status):status==='completed'?r.status==='completed':r.status===status)).length}</small></button>)}</div><section className="requests">{requestCards.map(r=><article className="request" key={r.id}><div className="request-title-row"><h2>{r.title}</h2><span className={'reservation-status status-'+r.status}>{r.status==='completed'?'Complete':r.status==='rejected'?'Rejected':r.status==='approved'?'Approved':r.status==='active'?'Active':r.status==='cancelled'?'Cancelled':'Pending'}</span></div><p>{r.k==='discussion'?'Lecturer:':'Student:'} {r.person}</p>{r.k==='book'?<p>Requested: {r.when}</p>:<><p>Capacity: {r.capacity}</p><p className="time">Reservation: {r.time}</p></>}<p>Reservation ID: <b>#{r.id}</b></p>{r.status==='pending'&&<div className="actions"><button disabled={busy} onClick={()=>setActive({r,a:'approve'})}>Approve</button><button disabled={busy} onClick={()=>setActive({r,a:'reject'})}>Reject</button></div>}</article>)}{!loading&&requestCards.length===0&&<p className="empty">No {reservationFilter==='all'?'':reservationFilter+' '}reservations in this category</p>}</section></>}
       {page==='addBooks'&&!form&&<><h1 className="title add-title">Add Books</h1><button className="note" onClick={()=>setForm('note')}><Icon name="note"/>Click here to post a note.<Icon name="arrow"/></button><section className="type-list"><button className="type-card" onClick={()=>{setForm('physical');setCoverFile(null)}}><img src="/assets/physical-books.jpeg"/><b>Physical Books</b><span>To the Library</span><i>→</i></button><button className="type-card" onClick={()=>{setForm('ebook');setCoverFile(null);setEbookFile(null)}}><img src="/assets/ebooks.jpeg"/><b>E-Books</b><span>To the Library Portal</span><i>→</i></button></section></>}
       {page==='addBooks'&&(form==='physical'||form==='ebook')&&<form className="form" onSubmit={submitBook}><button type="button" className="form-head" onClick={()=>setForm(null)}>← Add New Book</button>{field('Book Name',<input name="title" required placeholder="e.g., Designing Data-Intensive Applications"/>)}{field('Author',<input name="author" required placeholder="e.g., Martin Kleppmann"/>)}{field('Published Year',<input name="year" type="number" min="1" max={new Date().getFullYear()} required placeholder="e.g., 2024"/>)}{field('Category',<select name="category" required defaultValue="Computer Science">{categories.map(item=><option key={item}>{item}</option>)}</select>)}{form==='physical'&&<>{field('Bookshelf Location',<input name="shelf" required placeholder="e.g., CS-04-B"/>)}{field('Number of Copies',<input name="copies" type="number" min="1" defaultValue="1" required/>)}</>}{upload('Upload Book Cover','image/jpeg,image/png,image/webp',setCoverFile,coverFile)}{form==='ebook'&&upload('Upload eBook PDF','application/pdf',setEbookFile,ebookFile)}<button className="submit" disabled={busy}>{busy?'Saving…':'Add Book'}</button></form>}
-      {page==='addBooks'&&form==='note'&&<form className="form note-form" onSubmit={event=>{event.preventDefault();setDialog({title:'Announcements are not connected',text:'The current eLibrary backend has no library announcements service. This note has not been published.',button:'Close',kind:'error'});}}><button type="button" className="form-head" onClick={()=>setForm(null)}>← Add a Note for Publish</button>{field('Heading',<input required placeholder="e.g., Resource Update: UI/UX Design Trends"/>)}{field('Description',<textarea required placeholder="The latest edition has just been added to the eLibrary."/>) }{upload('Upload Photos','image/*',()=>{})}<button className="submit">Send Note</button></form>}
+      {page==='addBooks'&&form==='note'&&<form className="form note-form" onSubmit={submitAnnouncement}><button type="button" className="form-head" onClick={()=>{setForm(null);setNotePhotos([])}}>← Add a Note for Publish</button>{field('Heading',<input name="heading" maxLength={120} required placeholder="e.g., Resource Update: UI/UX Design Trends"/>)}{field('Description',<textarea name="description" maxLength={4000} required placeholder="The latest edition has just been added to the eLibrary."/>) }<label className="upload"><span>Upload Photos</span><span className="drop">▣<small>{notePhotos.length ? `${notePhotos.length} photo${notePhotos.length===1?'':'s'} selected` : 'Drag & drop or Click to upload'}</small><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={event=>setNotePhotos(Array.from(event.currentTarget.files ?? []))}/></span></label><button className="submit" disabled={busy}>{busy?'Publishing…':'Send Note'}</button></form>}
       {page==='profile'&&<><h1 className="title">Admin Profile</h1><section className="identity"><img src={avatarUrl||'/assets/admin-profile.jpeg'} onError={event=>{event.currentTarget.src='/assets/admin-profile.jpeg'}}/><h2>{profile?.full_name}</h2><p>{profile?.role==='admin'?'Administrator':profile?.role==='librarian'?'Librarian':'Library Staff'}</p></section><section className="details">{[['Admin ID',profile?.campus_id??''],['Email Address',session.user.email??''],['Phone Number',profile?.phone||'Not provided'],['Role',profile?.role??'']].map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</section><button className="logout" disabled={busy} onClick={()=>setDialog({title:'Log Out Account',text:'Are you sure you want to log out of the admin account?',button:'Log Out'})}>Log Out Account</button></>}
     </div>
     <nav className="nav"><div className="sidebar-brand"><b>eLibrary<span>.SLIIT</span></b><small>ADMINISTRATION</small></div><div className="sidebar-user">{profile?.full_name}<span>{profile?.role?.replace('_',' ')}</span></div>{(['dashboard','pending','addBooks','profile'] as Page[]).map((p,i)=>{const n=['Dashboard','Pending','Add Books','Profile'][i];return <button key={p} className={page===p?'active':''} onClick={()=>go(p)}><Icon name={n}/><span>{n}</span>{p==='pending'&&pending.length>0&&<b className="nav-count">{pending.length}</b>}</button>})}<button className="nav-logout" onClick={()=>setDialog({title:'Log Out Account',text:'Are you sure you want to log out of the admin account?',button:'Log Out'})}>↪ <span>Log Out</span></button></nav>

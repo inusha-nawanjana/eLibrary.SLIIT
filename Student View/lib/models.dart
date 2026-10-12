@@ -129,8 +129,10 @@ class LibraryNotice {
     this.body,
     this.category, {
     this.read = false,
+    this.images = const [],
   });
   final String id, title, body, category;
+  final List<String> images;
   bool read;
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -138,6 +140,7 @@ class LibraryNotice {
     'body': body,
     'category': category,
     'read': read,
+    'images': images,
   };
   factory LibraryNotice.fromJson(Map<String, dynamic> j) => LibraryNotice(
     j['id'],
@@ -145,6 +148,7 @@ class LibraryNotice {
     j['body'],
     j['category'],
     read: j['read'] ?? false,
+    images: List<String>.from(j['images'] ?? const []),
   );
 }
 

@@ -453,19 +453,29 @@ class LibraryState extends ChangeNotifier {
       }).toList();
       final ns = await client!
           .from('notifications')
-          .select()
+          .select('*, announcements(image_paths)')
           .order('created_at', ascending: false);
-      notices = ns
-          .map(
-            (n) => LibraryNotice(
-              n['id'],
-              n['title'],
-              n['body'],
-              n['category'],
-              read: n['read_at'] != null,
-            ),
-          )
-          .toList();
+      notices = ns.map((n) {
+        final announcement = n['announcements'];
+        final paths = announcement is Map
+            ? List<String>.from(announcement['image_paths'] ?? const [])
+            : <String>[];
+        final imageUrls = paths
+            .map(
+              (path) => client!.storage
+                  .from('announcement-images')
+                  .getPublicUrl(path),
+            )
+            .toList();
+        return LibraryNotice(
+          n['id'],
+          n['title'],
+          n['body'],
+          n['category'],
+          read: n['read_at'] != null,
+          images: imageUrls,
+        );
+      }).toList();
     }
     notifyListeners();
   }

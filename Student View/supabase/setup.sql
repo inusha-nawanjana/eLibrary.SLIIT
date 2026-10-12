@@ -375,4 +375,40 @@ insert into public.books(title,author,category,published_year,edition,shelf,syno
 -- Upload your licensed PDFs through Admin > Add books for live e-books.
 -- Demo sample PDFs are included in assets/ebooks; no published full books are bundled.
 
+-- Shared library notes published from the web admin dashboard.
+create table public.announcements (
+  id uuid primary key default gen_random_uuid(),
+  title text not null check (length(trim(title)) between 1 and 120),
+  body text not null check (length(trim(body)) between 1 and 4000),
+  image_paths text[] not null default '{}',
+  author_id uuid not null references public.profiles(id),
+  created_at timestamptz not null default now()
+);
+alter table public.notifications add column announcement_id uuid references public.announcements(id) on delete set null;
+alter table public.announcements enable row level security;
+create policy announcements_read on public.announcements for select to authenticated using (true);
+create policy announcements_publish on public.announcements for insert to authenticated
+  with check (author_id = auth.uid() and public.is_admin());
+grant select, insert on public.announcements to authenticated;
+revoke update, delete on public.announcements from anon, authenticated;
+
+create function public.notify_announcement()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.notifications(user_id, title, body, category, announcement_id)
+  select p.id, 'Library Update: ' || new.title, new.body, 'updates', new.id
+  from public.profiles p;
+  return new;
+end;
+$$;
+create trigger announcement_notifications after insert on public.announcements
+  for each row execute function public.notify_announcement();
+
+insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types) values
+  ('announcement-images','announcement-images',true,5242880,array['image/jpeg','image/png','image/webp']);
+create policy announcement_images_read on storage.objects for select using (bucket_id = 'announcement-images');
+create policy announcement_images_admin_write on storage.objects for all to authenticated
+  using (bucket_id = 'announcement-images' and public.is_admin())
+  with check (bucket_id = 'announcement-images' and public.is_admin());
+
 commit;

@@ -8,6 +8,8 @@ The supplied project already has the tables, row-level security policies, reserv
 
 For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor. Do not run both the setup bundle and its individual migrations. For an existing database with migrations 001 through 003 already applied, run `supabase/migrations/202610080004_staff_roles.sql` to enable librarian and library-staff profiles, then run `supabase/migrations/202610130001_direct_active_reservations.sql`. The latter makes administrator approval immediately set a reservation to `active`; rejected reservations appear under the student's **Rejected** Activity filter.
 
+To enable notes from the separate Admin Dashboard on an existing project, also run `supabase/migrations/202610130002_library_announcements.sql` in the SQL Editor. It creates the announcements table, staff-only publishing policies, the announcement image bucket, and the trigger that delivers published notes to every user's **Updates** notifications. Fresh projects created with `supabase/setup.sql` already include these objects.
+
 ## 2. Create the sample accounts and profiles
 
 In Authentication > Users, create the sample accounts from the README with confirmed email addresses. For student-ID login, use the faculty email addresses; lecturers and library staff sign in with their full campus email addresses.
