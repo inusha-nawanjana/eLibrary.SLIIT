@@ -26,3 +26,7 @@ config.local.json
 # JVM crash reports from local Android tooling
 hs_err_pid*.log
 replay_pid*.log
+
+# Admin Dashboard dependencies and generated bundle
+**/node_modules/
+Admin Dashboard/dist/

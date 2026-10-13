@@ -1,0 +1,6 @@
+{
+  "SUPABASE_URL": "https://YOUR-PROJECT.supabase.co",
+  "SUPABASE_PUBLISHABLE_KEY": "YOUR-PUBLISHABLE-OR-ANON-KEY",
+  "CAMPUS_EMAIL_DOMAIN": "my.sliit.lk",
+  "ADMIN_DASHBOARD_URL": "http://localhost:5173"
+}
