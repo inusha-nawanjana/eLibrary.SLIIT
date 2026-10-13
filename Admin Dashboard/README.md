@@ -32,3 +32,7 @@ The dashboard uses the existing Supabase project and row-level security; it does
 ```powershell
 npm run build
 ```
+
+Host the contents of the dist/ folder on a web server. The dashboard is a static SPA; it does not require a Node.js server.
+Link - https://elegant-arithmetic-147113.netlify.app/
+
