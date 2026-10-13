@@ -12,21 +12,14 @@ $runnerFiles = Get-ChildItem -LiteralPath $hostedRoot -Directory -Filter 'hooks_
     ForEach-Object { Join-Path $_.FullName 'lib/src/utils/run_process.dart' } |
     Where-Object { Test-Path -LiteralPath $_ }
 
-$old = @'
-      runInShell:
-          Platform.isWindows &&
-          (!includeParentEnvironment || workingDirectory != null),
-'@
-$new = @'
-      // Avoid cmd.exe: it splits Windows paths containing spaces.
-      runInShell: false,
-'@
+$old = '(?m)^      runInShell:\r?\n          Platform\.isWindows &&\r?\n          \(!includeParentEnvironment \|\| workingDirectory != null\),'
+$new = "      // Avoid cmd.exe: it splits Windows paths containing spaces.`n      runInShell: false,"
 
 $runnerChanged = $false
 foreach ($file in $runnerFiles) {
     $content = [System.IO.File]::ReadAllText($file)
-    if ($content.Contains($old)) {
-        $content = $content.Replace($old, $new)
+    if ([regex]::IsMatch($content, $old)) {
+        $content = [regex]::Replace($content, $old, $new)
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($file, $content, $utf8NoBom)
         $runnerChanged = $true

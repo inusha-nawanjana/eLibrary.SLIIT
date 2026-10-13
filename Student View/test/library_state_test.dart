@@ -238,7 +238,10 @@ void main() {
   test('extension stays pending without silently changing due date', () async {
     await state.signIn('IT23857162', 'ITStudent@123', rememberMe: false);
     final booking = state.bookings.firstWhere(
-      (b) => b.kind == 'book' && b.status == 'Active',
+      (b) =>
+          b.kind == 'book' &&
+          b.status == 'Active' &&
+          campusUtc(b.date, 0).isAfter(DateTime.now().toUtc()),
     );
     final due = booking.date;
     await state.extend(
