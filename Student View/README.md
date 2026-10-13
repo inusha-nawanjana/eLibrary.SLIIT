@@ -59,7 +59,8 @@ Additional local demo accounts are available on the login screen:
 | School of Management student | `bm22168432@my.sliit.lk` | `BMStudent@123` |
 | Lecturer | `lecturer@my.sliit.lk` | `Lecturer@12345` |
 | Librarian | `librarian@my.sliit.lk` | `Librarian@12345` |
-| Library staff | `library.staff@my.sliit.lk` | `Staff@12345` |
+| Library staff | `librar
+y.staff@my.sliit.lk` | `Staff@12345` |
 | Administrator | `admin@my.sliit.lk` | `Admin@12345` |
 
 Student IDs must use `IT`, `EN`, `HS`, or `BM` followed by eight numbers, such as `it23857162`; lowercase is accepted and converted internally. Campus emails must use the configured `@my.sliit.lk` domain. The login form rejects blank passwords, short passwords, non-ASCII characters, and invalid identifiers. These credentials work only in local demo mode. Real university credentials are not used.
