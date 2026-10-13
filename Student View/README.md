@@ -115,6 +115,9 @@ The existing system Android SDK is detected separately. The ignored `android/loc
 
 Open a new VS Code terminal after changing environment settings. If PowerShell blocks scripts, use `powershell -ExecutionPolicy Bypass -File .\flutter.ps1 run -d chrome`.
 
+
+
+
 ## Design references
 
 - Figma: https://www.figma.com/design/U8NmgCcHVUF8tcgQ6zcZCo/eLibrary.SLIIT?node-id=0-1
