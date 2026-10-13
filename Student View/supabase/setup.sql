@@ -178,7 +178,7 @@ returns uuid language plpgsql security definer set search_path = public as $$
 declare booking reservations; request_id uuid;
 begin
   select * into booking from reservations where id = p_reservation and user_id = auth.uid() for update;
-  if not found or booking.status <> 'active' then raise exception 'Only active reservations can be extended.'; end if;
+  if not found or booking.status not in ('active','approved') then raise exception 'Only active reservations can be extended.'; end if;
   if length(trim(p_note)) < 3 then raise exception 'Please give a reason for the extension.'; end if;
   if p_end <= coalesce(booking.ends_at, booking.due_date::timestamp at time zone 'Asia/Colombo') or p_end <= now()
     then raise exception 'Choose a later end time.'; end if;
@@ -280,7 +280,7 @@ begin
   if not found or request.status<>'pending' then raise exception 'No pending extension found.'; end if;
   select * into booking from reservations where id=request.reservation_id for update;
   if p_approve then
-    if booking.status<>'active' or request.requested_end<=now()
+    if booking.status not in ('active','approved') or request.requested_end<=now()
       or request.requested_end<=coalesce(booking.ends_at,booking.due_date::timestamp at time zone 'Asia/Colombo')
       then raise exception 'This extension is no longer valid.'; end if;
     if booking.kind='book' then

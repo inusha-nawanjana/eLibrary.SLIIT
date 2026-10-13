@@ -5,6 +5,7 @@ import { backendConfigured, supabase } from './backend';
 type Page = 'dashboard' | 'pending' | 'addBooks' | 'profile';
 type Kind = 'book' | 'learning' | 'discussion';
 type ReservationFilter = 'all' | 'pending' | 'active' | 'rejected' | 'completed';
+type PendingTab = Kind | 'extensions';
 type Reservation = {
   id: string;
   kind: Kind;
@@ -23,6 +24,24 @@ type Reservation = {
   books: { title: string; author: string } | null;
   rooms: { kind: Kind; number: number; capacity: number } | null;
 };
+type ExtensionRequest = {
+  id: string;
+  reservation_id: string;
+  requested_end: string;
+  note: string;
+  created_at: string;
+  reservations: {
+    id: string;
+    kind: Kind;
+    status: string;
+    full_name: string;
+    phone: string;
+    due_date: string | null;
+    ends_at: string | null;
+    books: { title: string; author: string } | null;
+    rooms: { kind: Kind; number: number; capacity: number } | null;
+  } | null;
+};
 type Room = { id: string; kind: 'learning' | 'discussion'; number: number; capacity: number; enabled: boolean };
 type Book = { id: string; title: string; copies: number; ebook_path: string | null };
 type Profile = { id: string; campus_id: string; full_name: string; phone: string; role: string; avatar_path: string | null };
@@ -31,6 +50,7 @@ type Dialog = { title: string; text: string; button: string; extra?: string; kin
 
 const categories = ['Computer Science', 'Management', 'Law', 'Cookery', 'Data Science', 'Engineering'];
 const tabs: [Kind, string][] = [['book', 'Books'], ['learning', 'Learning Space'], ['discussion', 'Discussion Space']];
+const pendingTabs: [PendingTab, string][] = [...tabs, ['extensions', 'Extend Reservations']];
 const statusTabs: [ReservationFilter, string][] = [['all', 'All'], ['pending', 'Pending'], ['active', 'Active'], ['rejected', 'Rejected'], ['completed', 'Complete']];
 const allowedRoles = ['admin', 'librarian', 'library_staff'];
 
@@ -59,10 +79,13 @@ function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [extensions, setExtensions] = useState<ExtensionRequest[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
   const [page, setPage] = useState<Page>('dashboard');
   const [kind, setKind] = useState<Kind>('book');
+  const [pendingTab, setPendingTab] = useState<PendingTab>('book');
+  const [extensionKind, setExtensionKind] = useState<Kind>('book');
   const [reservationFilter, setReservationFilter] = useState<ReservationFilter>('all');
   const [form, setForm] = useState<'physical' | 'ebook' | 'note' | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -94,16 +117,18 @@ function App() {
     setLoading(true);
     setLoadError('');
     try {
-      const [profileResult, reservationResult, roomResult, bookResult] = await Promise.all([
+      const [profileResult, reservationResult, roomResult, bookResult, extensionResult] = await Promise.all([
         supabase.from('profiles').select('id,campus_id,full_name,phone,role,avatar_path').eq('id', session.user.id).single(),
         supabase.from('reservations').select('*,books(title,author),rooms(kind,number,capacity)').order('created_at', { ascending: false }),
         supabase.from('rooms').select('id,kind,number,capacity,enabled').order('kind').order('number'),
         supabase.from('books').select('id,title,copies,ebook_path'),
+        supabase.from('extension_requests').select('*,reservations(id,kind,status,full_name,phone,due_date,ends_at,books(title,author),rooms(kind,number,capacity))').eq('status', 'pending').order('created_at', { ascending: false }),
       ]);
       if (profileResult.error) throw profileResult.error;
       if (reservationResult.error) throw reservationResult.error;
       if (roomResult.error) throw roomResult.error;
       if (bookResult.error) throw bookResult.error;
+      if (extensionResult.error) throw extensionResult.error;
       const staff = profileResult.data as Profile;
       if (!allowedRoles.includes(staff.role)) {
         await supabase.auth.signOut();
@@ -117,6 +142,7 @@ function App() {
       setReservations(reservationResult.data as unknown as Reservation[]);
       setRooms(roomResult.data as Room[]);
       setBooks(bookResult.data as Book[]);
+      setExtensions(extensionResult.data as unknown as ExtensionRequest[]);
       if (staff.avatar_path) {
         const { data } = await supabase.storage.from('avatars').createSignedUrl(staff.avatar_path, 3600);
         setAvatarUrl(data?.signedUrl ?? '');
@@ -158,12 +184,13 @@ function App() {
       setReservations([]);
       setRooms([]);
       setBooks([]);
+      setExtensions([]);
       setPage('dashboard');
     }
   };
 
   const go = (next: Page) => { setPage(next); setForm(null); setCoverFile(null); setEbookFile(null); };
-  const jump = (nextKind: Kind) => { setKind(nextKind); setReservationFilter('pending'); go('pending'); };
+  const jump = (nextKind: Kind) => { setPendingTab(nextKind); setKind(nextKind); setReservationFilter('pending'); go('pending'); };
   const pending = useMemo(() => reservations.filter(r => r.status === 'pending'), [reservations]);
   const categoryReservations = useMemo(() => reservations.filter(r => r.kind === kind), [reservations, kind]);
   const filteredReservations = useMemo(() => categoryReservations.filter(r => {
@@ -211,6 +238,24 @@ function App() {
       setDialog({ title, text: active.a === 'approve' ? 'The reservation is now active and the requester will be notified.' : 'The rejection note was saved and the requester will be notified.', button: 'Done', extra: active.a === 'reject' ? reason.trim() : (decisionNote.trim() || undefined), kind: 'success' });
     } catch (error) {
       setDialog({ title: 'Unable to update reservation', text: errorText(error), button: 'Close', kind: 'error' });
+    } finally { setBusy(false); }
+  };
+
+  const decideExtension = async (id: string, approve: boolean) => {
+    if (!supabase) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc('review_extension', { p_id: id, p_approve: approve });
+      if (error) throw error;
+      await refresh();
+      setDialog({
+        title: approve ? 'Extension Approved' : 'Extension Rejected',
+        text: `The reservation extension was ${approve ? 'approved' : 'rejected'} and the student has been notified.`,
+        button: 'Done',
+        kind: 'success',
+      });
+    } catch (error) {
+      setDialog({ title: 'Unable to update extension', text: errorText(error), button: 'Close', kind: 'error' });
     } finally { setBusy(false); }
   };
 
@@ -316,13 +361,13 @@ function App() {
         {metric(<>Available Learning<br/>Spaces</>,availableRooms('learning'),'green')}
         {metric(<>Available Discussion<br/>Spaces</>,availableRooms('discussion'),'green')}
         {metric(<>Books Reserved<br/>or Borrowed Now</>,String(reservations.filter(r=>r.kind==='book'&&['approved','active'].includes(r.status)).length),'navy',()=>jump('book'))}</div></>}
-      {page==='pending'&&<><h1 className="title">Reservations</h1><div className="tabs">{tabs.map(([k,t])=><button className={kind===k?'sel':''} key={k} onClick={()=>setKind(k)}>{t}</button>)}</div><div className="status-tabs" role="tablist" aria-label="Filter reservations by status">{statusTabs.map(([status,label])=><button key={status} role="tab" aria-selected={reservationFilter===status} className={reservationFilter===status?'status-sel':''} onClick={()=>setReservationFilter(status)}>{label}<small>{categoryReservations.filter(r=>status==='all'||(status==='active'?['approved','active'].includes(r.status):status==='completed'?r.status==='completed':r.status===status)).length}</small></button>)}</div><section className="requests">{requestCards.map(r=><article className="request" key={r.id}><div className="request-title-row"><h2>{r.title}</h2><span className={'reservation-status status-'+r.status}>{r.status==='completed'?'Complete':r.status==='rejected'?'Rejected':r.status==='approved'?'Approved':r.status==='active'?'Active':r.status==='cancelled'?'Cancelled':'Pending'}</span></div><p>{r.k==='discussion'?'Lecturer:':'Student:'} {r.person}</p>{r.k==='book'?<p>Requested: {r.when}</p>:<><p>Capacity: {r.capacity}</p><p className="time">Reservation: {r.time}</p></>}<p>Reservation ID: <b>#{r.id}</b></p>{r.status==='pending'&&<div className="actions"><button disabled={busy} onClick={()=>setActive({r,a:'approve'})}>Approve</button><button disabled={busy} onClick={()=>setActive({r,a:'reject'})}>Reject</button></div>}</article>)}{!loading&&requestCards.length===0&&<p className="empty">No {reservationFilter==='all'?'':reservationFilter+' '}reservations in this category</p>}</section></>}
+      {page==='pending'&&<><h1 className="title">Reservations</h1><div className="tabs" role="tablist" aria-label="Reservation sections">{pendingTabs.map(([tab,label])=><button key={tab} role="tab" aria-selected={pendingTab===tab} className={pendingTab===tab?'sel':''} onClick={()=>{setPendingTab(tab);if(tab!=='extensions'){setKind(tab);setReservationFilter('all')}}}>{label}{tab==='extensions'&&extensions.length>0&&<small className="tab-count">{extensions.length}</small>}</button>)}</div>{pendingTab==='extensions'?<><div className="status-tabs extension-tabs" role="tablist" aria-label="Filter extension requests by category">{tabs.map(([category,label])=><button key={category} role="tab" aria-selected={extensionKind===category} className={extensionKind===category?'status-sel':''} onClick={()=>setExtensionKind(category)}>{label}<small>{extensions.filter(item=>item.reservations?.kind===category).length}</small></button>)}</div><section className="requests">{extensions.filter(item=>item.reservations?.kind===extensionKind).map(item=>{const booking=item.reservations;const title=booking?.kind==='book'?(booking.books?.title??'Book reservation'):(booking?.kind==='learning'?'Learning':'Discussion')+' Room '+(booking?.rooms?.number??'');const currentEnd=booking?.kind==='book'?booking.due_date:booking?.ends_at;return <article className="request extension-request" key={item.id}><div className="request-title-row"><h2>{title}</h2><span className="reservation-status status-pending">Pending extension</span></div><p>Student: {booking?.full_name??'Unknown'} {booking?.phone?'('+booking.phone+')':''}</p>{currentEnd&&<p>Current end: {new Date(currentEnd).toLocaleString()}</p>}<p>Requested until: <b>{new Date(item.requested_end).toLocaleString()}</b></p><p>Reason: {item.note}</p><p>Reservation ID: <b>#{item.reservation_id}</b></p><div className="actions"><button disabled={busy} onClick={()=>void decideExtension(item.id,true)}>Approve</button><button disabled={busy} onClick={()=>void decideExtension(item.id,false)}>Reject</button></div></article>})}{!loading&&extensions.filter(item=>item.reservations?.kind===extensionKind).length===0&&<p className="empty">No pending {extensionKind} extension requests</p>}</section></>:<><div className="status-tabs" role="tablist" aria-label="Filter reservations by status">{statusTabs.map(([status,label])=><button key={status} role="tab" aria-selected={reservationFilter===status} className={reservationFilter===status?'status-sel':''} onClick={()=>setReservationFilter(status)}>{label}<small>{categoryReservations.filter(r=>status==='all'||(status==='active'?['approved','active'].includes(r.status):status==='completed'?r.status==='completed':r.status===status)).length}</small></button>)}</div><section className="requests">{requestCards.map(r=><article className="request" key={r.id}><div className="request-title-row"><h2>{r.title}</h2><span className={'reservation-status status-'+r.status}>{r.status==='completed'?'Complete':r.status==='rejected'?'Rejected':r.status==='approved'?'Approved':r.status==='active'?'Active':r.status==='cancelled'?'Cancelled':'Pending'}</span></div><p>{r.k==='discussion'?'Lecturer:':'Student:'} {r.person}</p>{r.k==='book'?<p>Requested: {r.when}</p>:<><p>Capacity: {r.capacity}</p><p className="time">Reservation: {r.time}</p></>}<p>Reservation ID: <b>#{r.id}</b></p>{r.status==='pending'&&<div className="actions"><button disabled={busy} onClick={()=>setActive({r,a:'approve'})}>Approve</button><button disabled={busy} onClick={()=>setActive({r,a:'reject'})}>Reject</button></div>}</article>)}{!loading&&requestCards.length===0&&<p className="empty">No {reservationFilter==='all'?'':reservationFilter+' '}reservations in this category</p>}</section></>}</>}
       {page==='addBooks'&&!form&&<><h1 className="title add-title">Add Books</h1><button className="note" onClick={()=>setForm('note')}><Icon name="note"/>Click here to post a note.<Icon name="arrow"/></button><section className="type-list"><button className="type-card" onClick={()=>{setForm('physical');setCoverFile(null)}}><img src="/assets/physical-books.jpeg"/><b>Physical Books</b><span>To the Library</span><i>→</i></button><button className="type-card" onClick={()=>{setForm('ebook');setCoverFile(null);setEbookFile(null)}}><img src="/assets/ebooks.jpeg"/><b>E-Books</b><span>To the Library Portal</span><i>→</i></button></section></>}
       {page==='addBooks'&&(form==='physical'||form==='ebook')&&<form className="form" onSubmit={submitBook}><button type="button" className="form-head" onClick={()=>setForm(null)}>← Add New Book</button>{field('Book Name',<input name="title" required placeholder="e.g., Designing Data-Intensive Applications"/>)}{field('Author',<input name="author" required placeholder="e.g., Martin Kleppmann"/>)}{field('Published Year',<input name="year" type="number" min="1" max={new Date().getFullYear()} required placeholder="e.g., 2024"/>)}{field('Category',<select name="category" required defaultValue="Computer Science">{categories.map(item=><option key={item}>{item}</option>)}</select>)}{form==='physical'&&<>{field('Bookshelf Location',<input name="shelf" required placeholder="e.g., CS-04-B"/>)}{field('Number of Copies',<input name="copies" type="number" min="1" defaultValue="1" required/>)}</>}{upload('Upload Book Cover','image/jpeg,image/png,image/webp',setCoverFile,coverFile)}{form==='ebook'&&upload('Upload eBook PDF','application/pdf',setEbookFile,ebookFile)}<button className="submit" disabled={busy}>{busy?'Saving…':'Add Book'}</button></form>}
       {page==='addBooks'&&form==='note'&&<form className="form note-form" onSubmit={submitAnnouncement}><button type="button" className="form-head" onClick={()=>{setForm(null);setNotePhotos([])}}>← Add a Note for Publish</button>{field('Heading',<input name="heading" maxLength={120} required placeholder="e.g., Resource Update: UI/UX Design Trends"/>)}{field('Description',<textarea name="description" maxLength={4000} required placeholder="The latest edition has just been added to the eLibrary."/>) }<label className="upload"><span>Upload Photos</span><span className="drop">▣<small>{notePhotos.length ? `${notePhotos.length} photo${notePhotos.length===1?'':'s'} selected` : 'Drag & drop or Click to upload'}</small><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={event=>setNotePhotos(Array.from(event.currentTarget.files ?? []))}/></span></label><button className="submit" disabled={busy}>{busy?'Publishing…':'Send Note'}</button></form>}
       {page==='profile'&&<><h1 className="title">Admin Profile</h1><section className="identity"><img src={avatarUrl||'/assets/admin-profile.jpeg'} onError={event=>{event.currentTarget.src='/assets/admin-profile.jpeg'}}/><h2>{profile?.full_name}</h2><p>{profile?.role==='admin'?'Administrator':profile?.role==='librarian'?'Librarian':'Library Staff'}</p></section><section className="details">{[['Admin ID',profile?.campus_id??''],['Email Address',session.user.email??''],['Phone Number',profile?.phone||'Not provided'],['Role',profile?.role??'']].map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</section><button className="logout" disabled={busy} onClick={()=>setDialog({title:'Log Out Account',text:'Are you sure you want to log out of the admin account?',button:'Log Out'})}>Log Out Account</button></>}
     </div>
-    <nav className="nav"><div className="sidebar-brand"><b>eLibrary<span>.SLIIT</span></b><small>ADMINISTRATION</small></div><div className="sidebar-user">{profile?.full_name}<span>{profile?.role?.replace('_',' ')}</span></div>{(['dashboard','pending','addBooks','profile'] as Page[]).map((p,i)=>{const n=['Dashboard','Pending','Add Books','Profile'][i];return <button key={p} className={page===p?'active':''} onClick={()=>go(p)}><Icon name={n}/><span>{n}</span>{p==='pending'&&pending.length>0&&<b className="nav-count">{pending.length}</b>}</button>})}<button className="nav-logout" onClick={()=>setDialog({title:'Log Out Account',text:'Are you sure you want to log out of the admin account?',button:'Log Out'})}>↪ <span>Log Out</span></button></nav>
+    <nav className="nav"><div className="sidebar-brand"><b>eLibrary<span>.SLIIT</span></b><small>ADMINISTRATION</small></div><div className="sidebar-user">{profile?.full_name}<span>{profile?.role?.replace('_',' ')}</span></div>{(['dashboard','pending','addBooks','profile'] as Page[]).map((p,i)=>{const n=['Dashboard','Pending','Add Books','Profile'][i];return <button key={p} className={page===p?'active':''} onClick={()=>go(p)}><Icon name={n}/><span>{n}</span>{p==='pending'&&(pending.length+extensions.length)>0&&<b className="nav-count">{pending.length+extensions.length}</b>}</button>})}<button className="nav-logout" onClick={()=>setDialog({title:'Log Out Account',text:'Are you sure you want to log out of the admin account?',button:'Log Out'})}>↪ <span>Log Out</span></button></nav>
     {active&&<div className="veil"><section className="dialog"><i className="clock">{active.a==='reject'?'!':'✓'}</i><h2>{active.a==='reject'?'Reason for Rejection':'Approve Reservation?'}</h2>{active.a==='reject'?<textarea className="reason" value={reason} onChange={e=>setReason(e.target.value)}/>:<><p>{active.r.title} · {active.r.person}</p><textarea className="reason" placeholder="Add a note for this approval (optional)" value={decisionNote} onChange={e=>setDecisionNote(e.target.value)}/></>}<p className="rid">Reservation ID<br/><b>#{active.r.id}</b></p><button className="dialog-button" disabled={busy} onClick={()=>void finishReview()}>{busy?'Saving…':active.a==='reject'?'Reject Request':'Approve'}</button><button className="cancel" disabled={busy} onClick={()=>setActive(null)}>Cancel</button></section></div>}
     {dialog&&<div className="veil"><section className="dialog"><i className="clock">{dialog.kind==='error'?'!':'✓'}</i><h2>{dialog.title}</h2><p>{dialog.text}</p>{dialog.extra&&<p className="rid">Note<br/><b>{dialog.extra}</b></p>}<button className="dialog-button" onClick={()=>{const logout=dialog.title==='Log Out Account';setDialog(null);if(logout)void signOut();}}>{dialog.button}</button><button className="cancel" onClick={()=>setDialog(null)}>Cancel</button></section></div>}
   </main>;

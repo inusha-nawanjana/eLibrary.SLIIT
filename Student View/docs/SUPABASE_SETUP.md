@@ -10,6 +10,8 @@ For a separate fresh project, run **supabase/setup.sql** once in its SQL Editor.
 
 To enable notes from the separate Admin Dashboard on an existing project, also run `supabase/migrations/202610130002_library_announcements.sql` in the SQL Editor. It creates the announcements table, staff-only publishing policies, the announcement image bucket, and the trigger that delivers published notes to every user's **Updates** notifications. Fresh projects created with `supabase/setup.sql` already include these objects.
 
+To allow extension requests for older reservations stored as `approved` (the app displays these as **Active**), run `supabase/migrations/202610130003_approved_reservation_extensions.sql` in the SQL Editor. It updates both student extension requests and administrator extension reviews. Fresh projects created with `supabase/setup.sql` already include this compatibility behavior.
+
 ## 2. Create the sample accounts and profiles
 
 In Authentication > Users, create the sample accounts from the README with confirmed email addresses. For student-ID login, use the faculty email addresses; lecturers and library staff sign in with their full campus email addresses.
