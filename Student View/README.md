@@ -96,6 +96,9 @@ Campus SSO, SMS, email approval messages, and push delivery require authorised e
 
 Validation: Flutter analyzer reported no issues; all 13 tests passed; the final screen-render check passed; Android debug APK packaging succeeded. No Android device was attached for a hardware smoke test.
 
+
+
+
 The tests exercise login/reservation navigation, validation, duplicate requests, room conflicts, extensions, persistence, filters, and narrow layouts. `test/design_preview_test.dart` renders student screens into the ignored `.design/rendered/` folder for comparison with Figma/PDF. `DESIGN_PREVIEW` is test-only; Android normally uses the real device status/navigation areas.
 
 The verified debug APK is `build/app/outputs/flutter-apk/app-debug.apk`. It is for testing, not store publication; configure release signing before publishing.
